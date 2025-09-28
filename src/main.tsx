@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "bootstrap-icons/font/bootstrap-icons.css";
 import InvitationSendingPage from "./pages/InvitationSendingPage"
+import PublicEventsPage from "./pages/PublicEventsPage"
 
 // import './index.css'
 
@@ -15,6 +16,7 @@ createRoot(document.getElementById("root")!).render(
         {/*     <Route path="/register" element={<RegisterPage />} /> */}
         {/*     <Route path="/" element={<HomePage />} /> */}
         <Route path="/invitation-sending" element={<InvitationSendingPage />} />
+        <Route path="/public-events" element={<PublicEventsPage/>} />
       </Routes>
     </BrowserRouter>
   </StrictMode>
