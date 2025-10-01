@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import InviteUsersModal from '../../invite/pages/InviteUsersModal'
 import { useParams } from 'react-router-dom'
 import { mockGetEventById, mockListAttendees, mockCancelEvent, type EventItem } from '../../create/services/mockCreateEvent'
 import { Button } from '../../../../components/Button'
@@ -10,6 +11,7 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState<EventItem | null>(null)
   const [attendees, setAttendees] = useState<{ id: string; name: string; email: string }[]>([])
   const user = useAuthStore((s) => s.user)
+  const [showInviteModal, setShowInviteModal] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -85,7 +87,7 @@ export default function EventDetailPage() {
         <div className="card p-5">
           <h3 className="font-semibold">Organizer Tools</h3>
           <div className="mt-3 grid grid-cols-1 gap-2">
-            <Button variant="secondary" onClick={() => window.location.assign(`/events/${event.id}/invite`)}><i className="bi bi-envelope me-2" />Invite Attendees</Button>
+            <Button variant="secondary" onClick={() => setShowInviteModal(true)}><i className="bi bi-envelope me-2" />Invite Attendees</Button>
             <Button variant="secondary" onClick={() => toast.info('Edit coming soon') }><i className="bi bi-pencil-square me-2" />Edit Event</Button>
             <Button variant="danger" onClick={async () => {
               if (!user) return toast.error('Login required')
@@ -101,6 +103,7 @@ export default function EventDetailPage() {
           </div>
         </div>
       </aside>
+      <InviteUsersModal open={showInviteModal} onClose={() => setShowInviteModal(false)} />
     </div>
   )
 }

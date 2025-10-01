@@ -1,4 +1,3 @@
-import React from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { useAuthStore } from '../store/authStore'
