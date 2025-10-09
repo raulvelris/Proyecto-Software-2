@@ -15,7 +15,6 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
   const { id } = useParams()
   const routeEventId = Number(id)
   const effectiveEventId = Number.isFinite(routeEventId) && routeEventId > 0 ? routeEventId : undefined
-
   const [userInput, setUserInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [searching, setSearching] = useState(false)
