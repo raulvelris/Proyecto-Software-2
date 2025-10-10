@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom'
 import { Button } from '../../../../components/Button'
 import { UsuarioTipo } from '../../../../types/UsuarioTipo'
 import Modal from '../../../../components/Modal'
-import { buscarUsuarios, invitarUsuarios, obtenerInvitados, obtenerConteoPendientes } from '../services/InviteService'
+import { buscarUsuarios, invitarUsuarios, obtenerNoElegibles, obtenerConteoPendientes } from '../services/InviteService'
+import { NoEligibleItem } from '../services/InviteService'
 import { toast } from 'sonner'
 
 interface InviteUsersModalProps {
@@ -20,7 +21,7 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
   const [searching, setSearching] = useState(false)
   const [users, setUsers] = useState<UsuarioTipo[]>([])
   const [selectedUsers, setSelectedUsers] = useState<UsuarioTipo[]>([])
-  const [invitedUsers, setInvitedUsers] = useState<number[]>([])
+  const [noEligibleUsers, setNoEligibleUsers] = useState<NoEligibleItem[]>([]) // era invited, ahora no eligible
   const [pendientes, setPendientes] = useState(0)
   const [limite, setLimite] = useState(0)
 
@@ -60,8 +61,8 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
     if (!open || !effectiveEventId) return
     const fetchInvitedUsers = async () => {
       try {
-        const invitados = await obtenerInvitados(effectiveEventId)
-        setInvitedUsers(invitados.map((u: any) => Number(u.usuario_id)))
+        const noElegibles = await obtenerNoElegibles(effectiveEventId)
+        setNoEligibleUsers(noElegibles)
       } catch (err) {
         console.error(err)
       }
@@ -102,10 +103,15 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
       return
     }
 
-    if (invitedUsers.includes(uid)) {
-      toast.error(`${getUserFullName(user)} has already been invited`)
+    const existing = noEligibleUsers.find(u => u.usuario_id === uid)
+    if (existing) {
+      if (existing.tipo === 'pendiente') {
+        toast.error(`${getUserFullName(user)} has a pending invitation`)
+      } else if (existing.tipo === 'participante') {
+        toast.error(`${getUserFullName(user)} is already participating`)
+      }
       return
-    }
+    }    
 
     if (bloqueado) {
       toast.error('Ya se ha cubierto el límite de invitaciones pendientes')
@@ -155,10 +161,14 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
       if (notFoundCount) toast.error(`${notFoundCount} user(s) not found`)
   
       // Actualizar estados
-      setInvitedUsers(prev => [
-        ...new Set([...prev, ...resultados
+      setNoEligibleUsers(prev => [
+        ...prev,
+        ...resultados
           .filter(r => r.status === 'Invitation sent')
-          .map((r: any) => Number(r.usuario_id))])
+          .map((r: any) => ({
+            usuario_id: Number(r.usuario_id),
+            tipo: 'pendiente' as const
+          }))
       ])
       setPendientes(prev =>
         prev + resultados.filter(r => r.status === 'Invitation sent').length
@@ -211,7 +221,16 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
               <div className="absolute z-10 w-full mt-1 bg-white/10 backdrop-blur border border-white/20 rounded-md shadow-lg max-h-48 overflow-y-auto">
                 {users.map(user => {
                   const uid = Number(user.usuario_id)
-                  const isBlocked = invitedUsers.includes(uid)
+                  const tipo = noEligibleUsers.find(u => u.usuario_id === uid)?.tipo
+
+                   // Determinar si está bloqueado y el mensaje según tipo
+                  const isBlocked = Boolean(tipo)
+                  const mensaje = tipo === 'pendiente'
+                    ? 'Pending invitation'
+                    : tipo === 'participante'
+                    ? 'Already participating'
+                    : ''
+
                   return (
                     <div
                       key={uid}
@@ -221,7 +240,7 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
                       onClick={() => !isBlocked && handleUserSelect(user)}
                     >
                       <div className="text-white text-sm font-medium">
-                        {getUserFullName(user) || user.correo}
+                        {getUserFullName(user) || user.correo} {mensaje && `- ${mensaje}`}
                       </div>
                       <div className="text-slate-400 text-xs">{user.correo}</div>
                     </div>

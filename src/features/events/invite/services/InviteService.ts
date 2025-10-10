@@ -7,13 +7,18 @@ export interface InvitacionResult {
   resultados: { usuario_id: number | string; status: string; invitacion_usuario_id?: number }[]
 }
 
+export interface NoEligibleItem {
+  usuario_id: number
+  tipo: 'pendiente' | 'participante'
+}
+
 // 1) buscar usuarios
 export async function buscarUsuarios(query: string): Promise<UsuarioTipo[]> {
   if (!query.trim()) return []
 
   try {
     const response = await fetch(
-      `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USUARIOS.SEARCH}?query=${encodeURIComponent(query)}`,
+      `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.INVITACIONES.SEARCH}?query=${encodeURIComponent(query)}`,
       { method: 'GET', headers: getAuthHeaders() }
     )
     const data = await handleApiResponse<{ usuarios: UsuarioTipo[] }>(response)
@@ -43,15 +48,15 @@ export async function invitarUsuarios(eventId: number | string, usuarioIds: numb
   }
 }
 
-// 3)  Obtener usuarios ya invitados a un evento
-export async function obtenerInvitados(eventId: number | string): Promise<{ usuario_id: number }[]> {
+// 3)  Obtener usuarios no elegibles
+export async function obtenerNoElegibles(eventId: number | string): Promise<NoEligibleItem[]> {
     try {
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.INVITACIONES.GET_BY_EVENT}/${eventId}`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.INVITACIONES.GET_NO_ELIGIBLE}/${eventId}`,
         { method: 'GET', headers: getAuthHeaders() }
       )
-      const data = await handleApiResponse<{ invitados: { usuario_id: number }[] }>(response)
-      return data.invitados || []
+      const data = await handleApiResponse<{ noElegibles: NoEligibleItem[] }>(response)
+      return data.noElegibles || []
     } catch (error) {
       console.error('Error fetching invited users:', error)
       throw new Error('Failed to fetch invited users')

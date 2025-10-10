@@ -7,14 +7,13 @@ export const API_CONFIG = {
   // Endpoints
   ENDPOINTS: {
     USUARIOS: {
-      SEARCH: '/usuarios/search',
     },
     INVITACIONES: {
-      SEND: '/invitaciones/send',
-      LIST: '/invitaciones',
-      RESPOND: '/invitaciones/respond',
-      GET_BY_EVENT: '/invitaciones/evento',
-      COUNT: '/invitaciones/count'
+      SEARCH: '/invitations/search',
+      SEND: '/invitations/send',
+      RESPOND: '/invitations/respond',
+      GET_NO_ELIGIBLE: '/invitations/no-eligible',
+      COUNT: '/invitations/count'
     },
     EVENTOS: {
       LIST: '/eventos',
