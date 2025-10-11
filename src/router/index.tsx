@@ -45,7 +45,7 @@ export const router = createBrowserRouter([
           <InvitationsInboxPage />
         </PrivateRoute>
       ) },
-      { path: '/guests', element: (
+      { path: '/guests/:id', element: (
         <PrivateRoute>
           <GuestsListPage />
         </PrivateRoute>

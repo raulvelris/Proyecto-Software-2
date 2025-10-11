@@ -16,6 +16,9 @@ export const API_CONFIG = {
       GET_BY_EVENT: '/invitaciones/evento',
       COUNT: '/invitaciones/count'
     },
+    PARTICIPANTES: {
+      GET_BY_EVENT: '/eventos' // use /eventos/:id/participantes appended in service
+    },
     EVENTOS: {
       LIST: '/eventos',
       CREATE: '/eventos',

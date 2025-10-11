@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import EmptyState from '../../../../components/EmptyState'
 import { Button } from '../../../../components/Button'
 import { toast } from 'sonner'
-import { mockListInvitations, mockRespondInvitation } from '../../create/services/mockCreateEvent'
+import { mockListInvitations } from '../../create/services/mockCreateEvent'
+import { responderInvitacion } from '../../invite/services/InviteService'
 import { useAuthStore } from '../../../../store/authStore'
 
 export default function InvitationsInboxPage() {
@@ -24,11 +25,14 @@ export default function InvitationsInboxPage() {
   async function respond(id: string, accept: boolean) {
     if (!user) return
     try {
-      await mockRespondInvitation(id, accept, user.id)
-      toast.success(accept ? 'Invitation accepted' : 'Invitation rejected')
+      // call real service
+      const result = await responderInvitacion(id, accept)
+      toast.success(result.message || (accept ? 'Invitation accepted' : 'Invitation rejected'))
       load()
     } catch (e: any) {
-      toast.error(e?.message ?? 'Action failed')
+      // Show clear error messages for known validation errors
+      const msg = e?.message || 'Action failed'
+      toast.error(msg)
     }
   }
 

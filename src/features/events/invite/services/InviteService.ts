@@ -44,19 +44,19 @@ export async function invitarUsuarios(eventId: number | string, usuarioIds: numb
 }
 
 // 3)  Obtener usuarios ya invitados a un evento
-export async function obtenerInvitados(eventId: number | string): Promise<{ usuario_id: number }[]> {
-    try {
-      const response = await fetch(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.INVITACIONES.GET_BY_EVENT}/${eventId}`,
-        { method: 'GET', headers: getAuthHeaders() }
-      )
-      const data = await handleApiResponse<{ invitados: { usuario_id: number }[] }>(response)
-      return data.invitados || []
-    } catch (error) {
-      console.error('Error fetching invited users:', error)
-      throw new Error('Failed to fetch invited users')
-    }
+export async function obtenerInvitados(eventId: number | string): Promise<any[]> {
+  try {
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PARTICIPANTES.GET_BY_EVENT}/${eventId}/participantes`,
+      { method: 'GET', headers: getAuthHeaders() }
+    )
+    const data = await handleApiResponse<{ participantes: any[] }>(response)
+    return data.participantes || []
+  } catch (error) {
+    console.error('Error fetching invited users:', error)
+    throw new Error('Failed to fetch invited users')
   }
+}
 
 // 4) Obtener conteo de invitaciones pendientes por evento
 export async function obtenerConteoPendientes(eventId: number | string): Promise<{ pendientes: number; limite: number }> {
@@ -75,4 +75,24 @@ export async function obtenerConteoPendientes(eventId: number | string): Promise
       throw new Error('Failed to fetch pending invitations count')
     }
   }
+
+// 5) Responder a una invitación (aceptar/rechazar)
+export async function responderInvitacion(invitationId: number | string, accept: boolean): Promise<{ success: boolean; message?: string }> {
+  try {
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.INVITACIONES.RESPOND}`,
+      {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ invitacion_usuario_id: invitationId, accept }),
+      }
+    )
+
+    const data = await handleApiResponse<{ success: boolean; message?: string }>(response)
+    return data
+  } catch (error: any) {
+    console.error('Error responding to invitation:', error)
+    throw error
+  }
+}
 
