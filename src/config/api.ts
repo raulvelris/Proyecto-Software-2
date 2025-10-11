@@ -6,8 +6,6 @@ export const API_CONFIG = {
   
   // Endpoints
   ENDPOINTS: {
-    USUARIOS: {
-    },
     INVITACIONES: {
       SEARCH: '/invitations/search',
       SEND: '/invitations/send',
