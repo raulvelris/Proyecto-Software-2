@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import InviteUsersModal from '../../invite/pages/InviteUsersModal'
 import { useParams } from 'react-router-dom'
-import { mockGetEventById, mockListAttendees, mockCancelEvent, type EventItem } from '../../create/services/mockCreateEvent'
+import { mockListAttendees, mockCancelEvent, type EventItem } from '../../create/services/mockCreateEvent'
 import { Button } from '../../../../components/Button'
 import { useAuthStore } from '../../../../store/authStore'
 import { toast } from 'sonner'
+import { getEventoDetalle } from '../../../../features/events/details/service/EventDetailService'
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -12,10 +13,33 @@ export default function EventDetailPage() {
   const [attendees, setAttendees] = useState<{ id: string; name: string; email: string }[]>([])
   const user = useAuthStore((s) => s.user)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
 
   useEffect(() => {
     if (!id) return
-    mockGetEventById(id).then((r) => setEvent(r.data.event)).catch(() => setEvent(null))
+    // Obtener detalle real desde el backend y mapear al shape de EventItem
+    getEventoDetalle(Number(id))
+      .then((r) => {
+        const ev = r.evento as any
+        const mapped: EventItem = {
+          id: String(ev.evento_id),
+          name: ev.titulo ?? 'Untitled Event',
+          date: ev.fechaHora ? new Date(ev.fechaHora).toISOString() : new Date().toISOString(),
+          capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
+          description: ev.descripcion ?? undefined,
+          ownerId: '0',
+          privacy: (ev.privacidad === 1 ? 'public' : 'private'),
+          status: 'published',
+          locationCity: ev.ubicacion?.direccion ?? '',
+          guestsCount: 0,
+          imageUrl: ev.imagen ?? undefined,
+          category: undefined,
+          lat: typeof ev.ubicacion?.latitud === 'number' ? ev.ubicacion.latitud : undefined,
+          lng: typeof ev.ubicacion?.longitud === 'number' ? ev.ubicacion.longitud : undefined,
+        }
+        setEvent(mapped)
+      })
+      .catch(() => setEvent(null))
     mockListAttendees(id).then((r) => setAttendees(r.data.attendees))
   }, [id])
 
@@ -76,7 +100,7 @@ export default function EventDetailPage() {
           <div className="h-56 w-full bg-white/5 flex items-center justify-center">
             {event.lat && event.lng ? (
               <img alt="Map" className="w-full h-56 object-cover"
-                   src={`https://maps.googleapis.com/maps/api/staticmap?center=${event.lat},${event.lng}&zoom=12&size=600x300&markers=color:red|${event.lat},${event.lng}`}
+                   src={`https://maps.googleapis.com/maps/api/staticmap?center=${event.lat},${event.lng}&zoom=12&size=600x300&markers=color:red|${event.lat},${event.lng}${apiKey ? `&key=${apiKey}` : ''}`}
               />
             ) : (
               <div className="p-4 text-sm text-slate-400">Map preview unavailable</div>
@@ -94,8 +118,25 @@ export default function EventDetailPage() {
               try {
                 await mockCancelEvent(event.id, user.id)
                 toast.success('Event cancelled')
-                const r = await mockGetEventById(event.id)
-                setEvent(r.data.event)
+                const r = await getEventoDetalle(Number(event.id))
+                const ev = r.evento as any
+                const mapped: EventItem = {
+                  id: String(ev.evento_id),
+                  name: ev.titulo ?? 'Untitled Event',
+                  date: ev.fechaHora ? new Date(ev.fechaHora).toISOString() : new Date().toISOString(),
+                  capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
+                  description: ev.descripcion ?? undefined,
+                  ownerId: '0',
+                  privacy: (ev.privacidad === 1 ? 'public' : 'private'),
+                  status: 'published',
+                  locationCity: ev.ubicacion?.direccion ?? '',
+                  guestsCount: 0,
+                  imageUrl: ev.imagen ?? undefined,
+                  category: undefined,
+                  lat: typeof ev.ubicacion?.latitud === 'number' ? ev.ubicacion.latitud : undefined,
+                  lng: typeof ev.ubicacion?.longitud === 'number' ? ev.ubicacion.longitud : undefined,
+                }
+                setEvent(mapped)
               } catch (e: any) {
                 toast.error(e?.message ?? 'Could not cancel event')
               }
