@@ -44,8 +44,8 @@ export default function LoginPage() {
       <p className="text-sm text-slate-400 mb-6">Accede a tus eventos e invitaciones</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input label="Email" type="email" placeholder="you@example.com" error={errors.email?.message} {...register('email')} />
-        <Input label="Password" type="password" placeholder="••••••••" error={errors.password?.message} {...register('password')} />
+        <Input label="Correo" type="email" placeholder="tu@ejemplo.com" error={errors.email?.message} {...register('email')} />
+        <Input label="Contraseña" type="password" placeholder="••••••••" error={errors.password?.message} {...register('password')} />
         <Button disabled={isSubmitting} className="w-full">{isSubmitting ? 'Signing in…' : 'Sign in'}</Button>
       </form>
 
