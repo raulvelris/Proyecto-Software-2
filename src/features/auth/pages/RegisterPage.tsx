@@ -47,8 +47,8 @@ export default function RegisterPage() {
       <p className="text-sm text-slate-400 mb-6">Comienza a gestionar tus eventos</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input label="Nombre" placeholder="Juan" error={errors.nombre?.message} {...register('nombre')} />
-        <Input label="Apellido" placeholder="Pérez" error={errors.apellido?.message} {...register('apellido')} />
+        <Input label="Nombre" placeholder="Nombre" error={errors.nombre?.message} {...register('nombre')} />
+        <Input label="Apellido" placeholder="Apellido" error={errors.apellido?.message} {...register('apellido')} />
         <Input label="Correo" type="email" placeholder="tu@ejemplo.com" error={errors.correo?.message} {...register('correo')} />
         <Input label="Contraseña" type="password" placeholder="••••••••" error={errors.clave?.message} {...register('clave')} />
         <Input label="Confirmar contraseña" type="password" placeholder="••••••••" error={errors.confirmPassword?.message} {...register('confirmPassword')} />

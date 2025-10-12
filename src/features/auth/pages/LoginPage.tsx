@@ -40,8 +40,8 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold mb-1">Sign in</h1>
-      <p className="text-sm text-slate-400 mb-6">Access your events and invitations</p>
+      <h1 className="text-xl font-semibold mb-1">Inicia sesión</h1>
+      <p className="text-sm text-slate-400 mb-6">Accede a tus eventos e invitaciones</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input label="Email" type="email" placeholder="you@example.com" error={errors.email?.message} {...register('email')} />
@@ -50,7 +50,7 @@ export default function LoginPage() {
       </form>
 
       <p className="text-sm text-slate-400 mt-4">
-        Don’t have an account? <Link className="text-blue-400 hover:underline" to="/register">Create one</Link>
+        ¿No tienes cuenta? <Link className="text-blue-400 hover:underline" to="/register">Create una</Link>
       </p>
     </div>
   )
