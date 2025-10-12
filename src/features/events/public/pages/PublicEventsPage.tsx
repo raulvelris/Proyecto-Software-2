@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import { mockListPublicEvents, mockConfirmAttendance, type EventItem } from '../../create/services/mockCreateEvent'
+import { mockListPublicEvents, type EventItem } from '../../create/services/mockCreateEvent'
 import { Button } from '../../../../components/Button'
 import { toast } from 'sonner'
+import { confirmPublicAttendance } from '../../../../features/events/details/service/EventDetailService'
+import { useAuthStore } from '../../../../store/authStore'
 
 export default function PublicEventsPage() {
   const [events, setEvents] = useState<EventItem[]>([])
+  const user = useAuthStore((s) => s.user)
 
   useEffect(() => {
     mockListPublicEvents().then((r) => setEvents(r.data.events))
@@ -12,7 +15,11 @@ export default function PublicEventsPage() {
 
   async function confirmAttendance(e: EventItem) {
     try {
-      await mockConfirmAttendance(e.id, '1')
+      if (!user) {
+        toast.error('Login required')
+        return
+      }
+      await confirmPublicAttendance(Number(e.id), Number(user.id))
       toast.success(`Attendance confirmed for ${e.name}`)
     } catch (err: any) {
       toast.error(err?.message ?? 'Could not confirm attendance')
