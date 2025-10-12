@@ -53,6 +53,35 @@ export async function registerUser(data: RegisterData): Promise<RegisterResponse
   return result
 }
 
+export interface LoginResponse {
+  success: boolean
+  user: {
+    usuario_id: number
+    correo: string
+    nombre: string | null
+    apellido: string | null
+  }
+  token: string
+}
+
+export async function login(correo: string, clave: string): Promise<LoginResponse> {
+  const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ correo, clave }),
+  })
+
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.message || 'Error al iniciar sesión')
+  }
+
+  return result
+}
+
 /**
  * Activa la cuenta de usuario con el token
  */

@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import InviteUsersModal from '../../invite/pages/InviteUsersModal'
 import { useParams } from 'react-router-dom'
-import { mockListAttendees, mockCancelEvent, type EventItem } from '../../create/services/mockCreateEvent'
+import { mockCancelEvent, type EventItem } from '../../create/services/mockCreateEvent'
 import { Button } from '../../../../components/Button'
 import { useAuthStore } from '../../../../store/authStore'
 import { toast } from 'sonner'
-import { getEventoDetalle } from '../../../../features/events/details/service/EventDetailService'
+import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService'
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [event, setEvent] = useState<EventItem | null>(null)
-  const [attendees, setAttendees] = useState<{ id: string; name: string; email: string }[]>([])
+  const [organizer, setOrganizer] = useState<ParticipanteItem | null>(null)
+  const [attendees, setAttendees] = useState<ParticipanteItem[]>([])
   const user = useAuthStore((s) => s.user)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
@@ -24,7 +25,7 @@ export default function EventDetailPage() {
         const mapped: EventItem = {
           id: String(ev.evento_id),
           name: ev.titulo ?? 'Untitled Event',
-          date: ev.fechaHora ? new Date(ev.fechaHora).toISOString() : new Date().toISOString(),
+          date: ev.fechaInicio ? new Date(ev.fechaInicio).toISOString() : new Date().toISOString(),
           capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
           description: ev.descripcion ?? undefined,
           ownerId: '0',
@@ -40,7 +41,19 @@ export default function EventDetailPage() {
         setEvent(mapped)
       })
       .catch(() => setEvent(null))
-    mockListAttendees(id).then((r) => setAttendees(r.data.attendees))
+    // Obtener participantes (organizador + asistentes)
+    getParticipantesByEvento(Number(id))
+      .then((r) => {
+        const list = (r.participantes || []) as ParticipanteItem[]
+        const org = list.find((p) => (p.rol || '').toLowerCase() === 'organizador') || null
+        const others = list.filter((p) => (p.rol || '').toLowerCase() !== 'organizador')
+        setOrganizer(org)
+        setAttendees(others)
+      })
+      .catch(() => {
+        setOrganizer(null)
+        setAttendees([])
+      })
   }, [id])
 
   if (!event) return <p className="text-slate-400">Loading…</p>
@@ -68,20 +81,28 @@ export default function EventDetailPage() {
         </div>
 
         <div className="card p-5 mt-5">
-          <h2 className="font-semibold mb-2">Attendees ({attendees.length})</h2>
-          {attendees.length ? (
-            <ul className="text-sm divide-y divide-white/5">
-              {attendees.map((a) => (
-                <li key={a.id} className="py-2 flex items-center gap-2">
+          <h2 className="font-semibold mb-2">Asistentes</h2>
+          <ul className="text-sm divide-y divide-white/5">
+            {organizer && (
+              <li className="py-2 flex items-center gap-2">
+                <i className="bi bi-person-badge" />
+                <span className="font-medium">{organizer.nombre} {organizer.apellido}</span>
+                <span className="text-slate-400">– {organizer.correo}</span>
+                <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">Organizador</span>
+              </li>
+            )}
+            {attendees.length ? (
+              attendees.map((a) => (
+                <li key={a.participante_id} className="py-2 flex items-center gap-2">
                   <i className="bi bi-person-circle" />
-                  <span>{a.name}</span>
-                  <span className="text-slate-400">– {a.email}</span>
+                  <span>{a.nombre} {a.apellido}</span>
+                  <span className="text-slate-400">– {a.correo}</span>
                 </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-slate-400 text-sm">No attendees yet.</p>
-          )}
+              ))
+            ) : (
+              <li className="py-2 text-slate-400 text-sm">No hay asistentes aún.</li>
+            )}
+          </ul>
         </div>
       </div>
 

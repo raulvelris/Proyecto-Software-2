@@ -3,10 +3,10 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Input from '../../../components/Input'
 import { Button } from '../../../components/Button'
-import { mockLogin } from '../services/mockAuth'
 import { useAuthStore } from '../../../store/authStore'
 import { toast } from 'sonner'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { login as backendLogin } from '../services/authService'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -28,8 +28,15 @@ export default function LoginPage() {
 
   async function onSubmit(values: FormValues) {
     try {
-      const res = await mockLogin(values.email, values.password)
-      login(res.data.user, res.data.token)
+      const res = await backendLogin(values.email, values.password)
+      const userForStore = {
+        id: String(res.user.usuario_id),
+        name: [res.user.nombre, res.user.apellido].filter(Boolean).join(' ') || res.user.correo,
+        email: res.user.correo,
+      }
+      // Persist token for API calls
+      localStorage.setItem('auth_token', res.token)
+      login(userForStore, res.token)
       toast.success('Welcome back!')
       const redirect = location.state?.from?.pathname ?? '/events/public'
       navigate(redirect, { replace: true })
