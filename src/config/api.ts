@@ -18,7 +18,7 @@ export const API_CONFIG = {
       COUNT: '/invitations/count'
     },
     EVENTOS: {
-      LIST: '/eventos',
+      LIST: '/events/public',
       CREATE: '/eventos',
       DETAIL: '/eventos',
     },
