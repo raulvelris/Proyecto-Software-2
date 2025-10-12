@@ -11,17 +11,3 @@ export async function mockLogin(email: string, password: string) {
   const { password: _pwd, ...safe } = user
   return mockOk({ user: safe, token: 'mock-token' })
 }
-
-export async function mockRegister(name: string, email: string, password: string) {
-  const exists = users.some((u) => u.email === email)
-  if (exists) return mockFail('User already exists')
-  const newUser: User & { password: string } = {
-    id: String(users.length + 1),
-    name,
-    email,
-    password,
-  }
-  users.push(newUser)
-  const { password: _pwd, ...safe } = newUser
-  return mockOk({ user: safe })
-}

@@ -6,6 +6,10 @@ export const API_CONFIG = {
   
   // Endpoints
   ENDPOINTS: {
+    AUTH: {
+      REGISTER: '/auth/register',
+      ACTIVATE: '/auth/activate'
+    },
     INVITACIONES: {
       SEARCH: '/invitations/search',
       SEND: '/invitations/send',

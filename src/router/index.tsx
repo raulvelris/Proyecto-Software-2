@@ -5,8 +5,8 @@ import AuthLayout from '../layouts/AuthLayout'
 // Auth feature pages
 import LoginPage from '../features/auth/pages/LoginPage'
 import RegisterPage from '../features/auth/pages/RegisterPage'
+import ActivateAccountPage from '../features/auth/pages/ActivateAccountPage'
 import ActivationSuccessPage from '../features/auth/pages/ActivationSuccessPage'
-import ActivationExpiredPage from '../features/auth/pages/ActivationExpiredPage'
 import ProfilePage from '../features/auth/pages/ProfilePage'
 
 // Events feature pages
@@ -22,44 +22,22 @@ import { PrivateRoute } from './privateRoute'
 
 export const router = createBrowserRouter([
   {
-    element: <MainLayout />,
+    element: (
+      <PrivateRoute>
+        <MainLayout />
+      </PrivateRoute>
+    ),
     children: [
       { index: true, element: <Navigate to="/events/public" replace /> },
-      // Public pages
+      // All pages require authentication
       { path: '/events/public', element: <PublicEventsPage /> },
       { path: '/events/:id', element: <EventDetailPage /> },
-
-      // Private pages (guarded individually)
-      { path: '/events/create', element: (
-        <PrivateRoute>
-          <CreateEventPage />
-        </PrivateRoute>
-      ) },
-      { path: '/events/managed', element: (
-        <PrivateRoute>
-          <ManagedEventsPage />
-        </PrivateRoute>
-      ) },
-      { path: '/invitations', element: (
-        <PrivateRoute>
-          <InvitationsInboxPage />
-        </PrivateRoute>
-      ) },
-      { path: '/guests', element: (
-        <PrivateRoute>
-          <GuestsListPage />
-        </PrivateRoute>
-      ) },
-      { path: '/attended', element: (
-        <PrivateRoute>
-          <AttendedEventsPage />
-        </PrivateRoute>
-      ) },
-      { path: '/profile', element: (
-        <PrivateRoute>
-          <ProfilePage />
-        </PrivateRoute>
-      ) },
+      { path: '/events/create', element: <CreateEventPage /> },
+      { path: '/events/managed', element: <ManagedEventsPage /> },
+      { path: '/invitations', element: <InvitationsInboxPage /> },
+      { path: '/guests', element: <GuestsListPage /> },
+      { path: '/attended', element: <AttendedEventsPage /> },
+      { path: '/profile', element: <ProfilePage /> },
     ],
   },
   // Auth pages
@@ -69,10 +47,10 @@ export const router = createBrowserRouter([
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
       { path: '/activate/success', element: <ActivationSuccessPage /> },
-      { path: '/activate/expired', element: <ActivationExpiredPage /> },
+      { path: '/activate/:token', element: <ActivateAccountPage /> },
     ],
   },
-  { path: '*', element: <Navigate to="/events/public" replace /> },
+  { path: '*', element: <Navigate to="/login" replace /> },
 ])
 
 export default router
