@@ -1,15 +1,13 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { Button } from '../../../components/Button'
-
 export default function ActivationSuccessPage() {
   return (
     <div className="text-center">
-      <h1 className="text-xl font-semibold">Activation email sent</h1>
-      <p className="text-sm text-slate-400 mt-1">Please check your inbox to verify your account.</p>
-      <div className="mt-6">
-        <Link to="/login"><Button>Back to sign in</Button></Link>
+      <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
       </div>
+      <h1 className="text-xl font-semibold">Email de activación enviado</h1>
+      <p className="text-sm text-slate-400 mt-1">Por favor revisa tu correo para verificar tu cuenta.</p>
     </div>
   )
 }

@@ -9,5 +9,5 @@ export function PrivateRoute({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
-  return <>{children}</>
+  return <>{children}</>  
 }

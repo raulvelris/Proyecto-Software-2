@@ -6,7 +6,9 @@ export const API_CONFIG = {
   
   // Endpoints
   ENDPOINTS: {
-    USUARIOS: {
+    AUTH: {
+      REGISTER: '/auth/register',
+      ACTIVATE: '/auth/activate'
     },
     INVITACIONES: {
       SEARCH: '/invitations/search',
@@ -16,7 +18,7 @@ export const API_CONFIG = {
       COUNT: '/invitations/count'
     },
     EVENTOS: {
-      LIST: '/eventos',
+      LIST: '/events/public',
       CREATE: '/eventos',
       DETAIL: '/eventos',
     },
