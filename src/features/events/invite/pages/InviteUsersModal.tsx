@@ -34,7 +34,7 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
   }
 
   const debounceSearch = useCallback(() => {
-    let timeoutId: NodeJS.Timeout
+    let timeoutId: ReturnType<typeof setTimeout>
     return (query: string) => {
       clearTimeout(timeoutId)
       timeoutId = setTimeout(async () => {
