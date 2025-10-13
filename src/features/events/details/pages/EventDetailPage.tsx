@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import InviteUsersModal from '../../invite/pages/InviteUsersModal'
+import InviteUsersModal from '../../invite/pages/InviteUsersModal.tsx'
 import { useParams } from 'react-router-dom'
-import { mockCancelEvent, type EventItem } from '../../create/services/mockCreateEvent'
-import { Button } from '../../../../components/Button'
-import { useAuthStore } from '../../../../store/authStore'
+import { mockCancelEvent, type EventItem } from '../../create/services/mockCreateEvent.ts'
+import { Button } from '../../../../components/Button.tsx'
+import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
-import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService'
+import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -15,6 +15,7 @@ export default function EventDetailPage() {
   const user = useAuthStore((s) => s.user)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
+  const isOrganizer = Boolean(organizer && user?.id && Number(organizer.usuario_id) === Number(user.id))
 
   useEffect(() => {
     if (!id) return
@@ -80,30 +81,32 @@ export default function EventDetailPage() {
           <p className="text-slate-300">{event.description || 'No description provided.'}</p>
         </div>
 
-        <div className="card p-5 mt-5">
-          <h2 className="font-semibold mb-2">Asistentes</h2>
-          <ul className="text-sm divide-y divide-white/5">
-            {organizer && (
-              <li className="py-2 flex items-center gap-2">
-                <i className="bi bi-person-badge" />
-                <span className="font-medium">{organizer.nombre} {organizer.apellido}</span>
-                <span className="text-slate-400">– {organizer.correo}</span>
-                <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">Organizador</span>
-              </li>
-            )}
-            {attendees.length ? (
-              attendees.map((a) => (
-                <li key={a.participante_id} className="py-2 flex items-center gap-2">
-                  <i className="bi bi-person-circle" />
-                  <span>{a.nombre} {a.apellido}</span>
-                  <span className="text-slate-400">– {a.correo}</span>
+        {isOrganizer && (
+          <div className="card p-5 mt-5">
+            <h2 className="font-semibold mb-2">Asistentes</h2>
+            <ul className="text-sm divide-y divide-white/5">
+              {organizer && (
+                <li className="py-2 flex items-center gap-2">
+                  <i className="bi bi-person-badge" />
+                  <span className="font-medium">{organizer.nombre} {organizer.apellido}</span>
+                  <span className="text-slate-400">– {organizer.correo}</span>
+                  <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">Organizador</span>
                 </li>
-              ))
-            ) : (
-              <li className="py-2 text-slate-400 text-sm">No hay asistentes aún.</li>
-            )}
-          </ul>
-        </div>
+              )}
+              {attendees.length ? (
+                attendees.map((a) => (
+                  <li key={a.participante_id} className="py-2 flex items-center gap-2">
+                    <i className="bi bi-person-circle" />
+                    <span>{a.nombre} {a.apellido}</span>
+                    <span className="text-slate-400">– {a.correo}</span>
+                  </li>
+                ))
+              ) : (
+                <li className="py-2 text-slate-400 text-sm">No hay asistentes aún.</li>
+              )}
+            </ul>
+          </div>
+        )}
       </div>
 
       <aside className="space-y-5">
@@ -129,43 +132,47 @@ export default function EventDetailPage() {
           </div>
         </div>
 
-        <div className="card p-5">
-          <h3 className="font-semibold">Organizer Tools</h3>
-          <div className="mt-3 grid grid-cols-1 gap-2">
-            <Button variant="secondary" onClick={() => setShowInviteModal(true)}><i className="bi bi-envelope me-2" />Invite Attendees</Button>
-            <Button variant="secondary" onClick={() => toast.info('Edit coming soon') }><i className="bi bi-pencil-square me-2" />Edit Event</Button>
-            <Button variant="danger" onClick={async () => {
-              if (!user) return toast.error('Login required')
-              try {
-                await mockCancelEvent(event.id, user.id)
-                toast.success('Event cancelled')
-                const r = await getEventoDetalle(Number(event.id))
-                const ev = r.evento as any
-                const mapped: EventItem = {
-                  id: String(ev.evento_id),
-                  name: ev.titulo ?? 'Untitled Event',
-                  date: ev.fechaHora ? new Date(ev.fechaHora).toISOString() : new Date().toISOString(),
-                  capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
-                  description: ev.descripcion ?? undefined,
-                  ownerId: '0',
-                  privacy: (ev.privacidad === 1 ? 'public' : 'private'),
-                  status: 'published',
-                  locationCity: ev.ubicacion?.direccion ?? '',
-                  guestsCount: 0,
-                  imageUrl: ev.imagen ?? undefined,
-                  category: undefined,
-                  lat: typeof ev.ubicacion?.latitud === 'number' ? ev.ubicacion.latitud : undefined,
-                  lng: typeof ev.ubicacion?.longitud === 'number' ? ev.ubicacion.longitud : undefined,
+        {isOrganizer && (
+          <div className="card p-5">
+            <h3 className="font-semibold">Organizer Tools</h3>
+            <div className="mt-3 grid grid-cols-1 gap-2">
+              <Button variant="secondary" onClick={() => setShowInviteModal(true)}><i className="bi bi-envelope me-2" />Invite Attendees</Button>
+              <Button variant="secondary" onClick={() => toast.info('Edit coming soon') }><i className="bi bi-pencil-square me-2" />Edit Event</Button>
+              <Button variant="danger" onClick={async () => {
+                if (!user) return toast.error('Login required')
+                try {
+                  await mockCancelEvent(event.id, user.id)
+                  toast.success('Event cancelled')
+                  const r = await getEventoDetalle(Number(event.id))
+                  const ev = r.evento as any
+                  const mapped: EventItem = {
+                    id: String(ev.evento_id),
+                    name: ev.titulo ?? 'Untitled Event',
+                    date: ev.fechaHora ? new Date(ev.fechaHora).toISOString() : new Date().toISOString(),
+                    capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
+                    description: ev.descripcion ?? undefined,
+                    ownerId: '0',
+                    privacy: (ev.privacidad === 1 ? 'public' : 'private'),
+                    status: 'published',
+                    locationCity: ev.ubicacion?.direccion ?? '',
+                    guestsCount: 0,
+                    imageUrl: ev.imagen ?? undefined,
+                    category: undefined,
+                    lat: typeof ev.ubicacion?.latitud === 'number' ? ev.ubicacion.latitud : undefined,
+                    lng: typeof ev.ubicacion?.longitud === 'number' ? ev.ubicacion.longitud : undefined,
+                  }
+                  setEvent(mapped)
+                } catch (e: any) {
+                  toast.error(e?.message ?? 'Could not cancel event')
                 }
-                setEvent(mapped)
-              } catch (e: any) {
-                toast.error(e?.message ?? 'Could not cancel event')
-              }
-            }}><i className="bi bi-x-circle me-2" />Cancel Event</Button>
+              }}><i className="bi bi-x-circle me-2" />Cancel Event</Button>
+            </div>
           </div>
-        </div>
+        )}
       </aside>
-      <InviteUsersModal open={showInviteModal} onClose={() => setShowInviteModal(false)} />
+      {isOrganizer && (
+        <InviteUsersModal open={showInviteModal} onClose={() => setShowInviteModal(false)} />
+      )}
     </div>
   )
 }
