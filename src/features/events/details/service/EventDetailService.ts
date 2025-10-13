@@ -1,4 +1,4 @@
-import { API_CONFIG, getAuthHeaders, handleApiResponse } from '../../../../config/api';
+import { API_CONFIG, getAuthHeaders, handleApiResponse } from '../../../../config/api.ts';
 
 export async function getEventoDetalle(id: number) {
   const res = await fetch(

@@ -21,6 +21,7 @@ export const API_CONFIG = {
       LIST: '/events/public',
       CREATE: '/eventos',
       DETAIL: '/eventos',
+      ATTENDED: '/events/attended',
     },
   },
 } as const;
