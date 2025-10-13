@@ -15,12 +15,14 @@ export default function PublicEventsPage() {
     let cancelled = false
     async function load() {
       try {
-        const res = await listPublicEvents()
+        // Pasar usuarioId para excluir eventos donde es organizador
+        const res = await listPublicEvents(user?.id)
         if (!res.success) {
           toast.error('Error loading events')
           return
         }
         let publicEvents = res.eventos || []
+        // Filtrar eventos donde ya confirmó asistencia
         if (user?.id) {
           const att = await listAttendedEvents(user.id)
           const attendedIds = new Set((att.eventos || []).map((e: any) => String(e.id)))

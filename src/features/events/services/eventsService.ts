@@ -1,7 +1,10 @@
 import { API_CONFIG, handleApiResponse, getAuthHeaders } from '../../../config/api.ts'
 
-export async function listPublicEvents() {
-  const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTOS.LIST}`)
+export async function listPublicEvents(usuarioId?: number | string) {
+  const url = usuarioId 
+    ? `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTOS.LIST}?usuarioId=${usuarioId}`
+    : `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTOS.LIST}`
+  const response = await fetch(url)
   return handleApiResponse<{ success: boolean; eventos: any[] }>(response)
 }
 
