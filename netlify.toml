@@ -9,4 +9,4 @@
 
 # Variables de entorno (también puedes configurarlas en el dashboard de Netlify)
 # [build.environment]
-#   VITE_API_URL = "https://tu-backend.up.railway.app/api"
+#   VITE_API_URL = "https://backend-software-2-production.up.railway.app/api"
