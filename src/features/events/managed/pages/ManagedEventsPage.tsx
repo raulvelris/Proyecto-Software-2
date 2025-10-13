@@ -1,24 +1,26 @@
 import React, { useEffect, useState } from 'react'
 import { useAuthStore } from '../../../../store/authStore'
-import { mockListManagedEvents, type EventItem } from '../../create/services/mockCreateEvent'
 import EmptyState from '../../../../components/EmptyState'
 import { Link } from 'react-router-dom'
+import { listManagedEvents } from '../../services/eventsService'
+
+type ManagedEvent = { id: string | number; name: string; dateStart: string; imageUrl?: string; capacity?: number }
 
 export default function ManagedEventsPage() {
   const user = useAuthStore((s) => s.user)
-  const [events, setEvents] = useState<EventItem[]>([])
+  const [events, setEvents] = useState<ManagedEvent[]>([])
 
   useEffect(() => {
     if (!user) return
-    mockListManagedEvents(user.id).then((r) => setEvents(r.data.events))
+    listManagedEvents(user.id).then((r) => setEvents(r.eventos as any))
   }, [user])
 
   if (!events.length) {
     return (
       <EmptyState
-        title="You haven't created events yet"
-        description="Create your first event and start inviting guests."
-        action={<Link to="/events/create" className="btn-primary">Create event</Link>}
+        title="Aún no has creado eventos"
+        description="Crea tu primer evento y empieza a invitar asistentes."
+        action={<Link to="/events/create" className="btn-primary">Crear evento</Link>}
       />
     )
   }
@@ -32,8 +34,10 @@ export default function ManagedEventsPage() {
           )}
           <div className="p-4">
           <h3 className="font-semibold"><i className="bi bi-layout-text-window-reverse me-2" />{e.name}</h3>
-          <p className="text-sm text-slate-400 mt-1">{new Date(e.date).toLocaleString()}</p>
-          <p className="text-sm text-slate-400">Capacity: {e.capacity}</p>
+          <p className="text-sm text-slate-400 mt-1">{new Date(e.dateStart).toLocaleString()}</p>
+          {typeof e.capacity !== 'undefined' && (
+            <p className="text-sm text-slate-400">Capacity: {e.capacity}</p>
+          )}
           <div className="mt-3 text-sm text-blue-400 flex items-center gap-1">
             <i className="bi bi-info-circle" />
             <span>Más información</span>

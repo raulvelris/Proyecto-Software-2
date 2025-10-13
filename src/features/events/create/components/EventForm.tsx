@@ -4,20 +4,20 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Input from '../../../../components/Input'
 import { Button } from '../../../../components/Button'
+import LocationPicker from '../../../../components/LocationPicker'
 
 export const eventSchema = z.object({
   name: z.string().min(3, 'Name too short'),
   date: z
     .string()
     .refine((v) => !!v && new Date(v) > new Date(), 'Date must be in the future'),
-  capacity: z.coerce.number().int().positive('Capacity must be > 0'),
+  capacity: z.coerce.number().int().positive('Capacity must be > 0').max(100, 'Capacity must be ≤ 100'),
   description: z.string().optional(),
   privacy: z.enum(['public', 'private']).default('public'),
-  locationCity: z.string().min(2, 'City is required'),
-  locationExact: z.string().optional(),
-  imageUrl: z.string().url().optional(),
-  lat: z.number().optional(),
-  lng: z.number().optional(),
+  locationAddress: z.string().min(3, 'Pick a location').refine((v) => /lima/i.test(v), 'Location must be within Lima'),
+  imageUrl: z.string().url({ message: 'Image is required' }),
+  lat: z.number(),
+  lng: z.number(),
 })
 
 export type EventFormValues = z.infer<typeof eventSchema>
@@ -31,6 +31,7 @@ export default function EventForm({
 }) {
   const [preview, setPreview] = React.useState<string | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
+  const [pickerOpen, setPickerOpen] = React.useState(false)
 
   const {
     register,
@@ -46,8 +47,9 @@ export default function EventForm({
       capacity: 10,
       description: '',
       privacy: 'public',
-      locationCity: 'Lima',
-      locationExact: '',
+      locationAddress: '',
+      lat: undefined as unknown as number,
+      lng: undefined as unknown as number,
     },
   })
 
@@ -64,16 +66,11 @@ export default function EventForm({
   }
 
   function openGoogleMapsSearch() {
-    const q = getValues('locationExact') || getValues('locationCity') || ''
-    if (q) window.open(`https://www.google.com/maps/search/${encodeURIComponent(q)}`, '_blank')
+    // removed
   }
 
   function useCurrentLocation() {
-    if (!navigator.geolocation) return
-    navigator.geolocation.getCurrentPosition((pos) => {
-      setValue('lat', pos.coords.latitude, { shouldValidate: false })
-      setValue('lng', pos.coords.longitude, { shouldValidate: false })
-    })
+    // removed
   }
 
   return (
@@ -90,7 +87,7 @@ export default function EventForm({
           />
           {errors.date?.message && <p className="text-red-400 text-sm mt-1">{errors.date.message}</p>}
         </div>
-        <Input label="Capacity" type="number" min={1} error={errors.capacity?.message} {...register('capacity', { valueAsNumber: true })} />
+        <Input label="Capacity" type="number" min={1} max={100} error={errors.capacity?.message} {...register('capacity', { valueAsNumber: true })} />
       </div>
 
       <div>
@@ -118,6 +115,7 @@ export default function EventForm({
           <Button type="button" onClick={handlePickImage}>Select Image</Button>
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
         </div>
+        {errors.imageUrl?.message && <p className="text-red-400 text-sm mt-1">{errors.imageUrl.message}</p>}
         <p className="text-xs text-slate-500 mt-2">Recommended: Full width, 160px height. Max 5MB. JPG, PNG, or GIF.</p>
       </div>
 
@@ -129,28 +127,33 @@ export default function EventForm({
             <option value="private">Private</option>
           </select>
         </div>
-        <div>
-          <label className="label">City</label>
-          <select className="input" {...register('locationCity')}>
-            <option value="Lima">Lima</option>
-            <option value="Miraflores">Miraflores</option>
-            <option value="Surco">Surco</option>
-          </select>
-          {errors.locationCity?.message && (
-            <p className="text-red-400 text-sm mt-1">{errors.locationCity.message}</p>
-          )}
-        </div>
       </div>
 
       <div>
-        <label className="label">Exact Location</label>
-        <input className="input" placeholder="Enter exact address (e.g., Av. Larco 123, Miraflores, Lima)" {...register('locationExact')} />
-        <div className="mt-3 flex gap-3">
-          <Button type="button" variant="secondary" onClick={openGoogleMapsSearch}>Search on Google Maps</Button>
-          <Button type="button" variant="secondary" onClick={useCurrentLocation}>Use Current Location</Button>
+        <label className="label">Location</label>
+        <div className="flex gap-3 items-start">
+          <div className="flex-1">
+            <input className="input" readOnly value={getValues('locationAddress') || ''} placeholder="Pick on map (Lima only)" />
+            {errors.locationAddress?.message && (
+              <p className="text-red-400 text-sm mt-1">{errors.locationAddress.message}</p>
+            )}
+          </div>
+          <Button type="button" onClick={() => setPickerOpen(true)}>Pick location</Button>
         </div>
-        <p className="text-xs text-slate-500 mt-2">Enter the exact address manually or use Google Maps to search and get precise coordinates.</p>
       </div>
+
+      {/* Location Picker Modal */}
+      {pickerOpen && (
+        <LocationPicker
+          onCancel={() => setPickerOpen(false)}
+          onSelect={(addr: string, lat: number, lng: number) => {
+            setValue('locationAddress', addr, { shouldValidate: true })
+            setValue('lat', lat, { shouldValidate: true })
+            setValue('lng', lng, { shouldValidate: true })
+            setPickerOpen(false)
+          }}
+        />
+      )}
 
       <Button disabled={submitting} className="w-full">{submitting ? 'Creating…' : 'Create event'}</Button>
     </form>

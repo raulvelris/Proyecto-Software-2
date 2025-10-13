@@ -1,30 +1,33 @@
 import React, { useState } from 'react'
 import EventForm, { type EventFormValues } from '../components/EventForm'
-import { mockCreateEvent } from '../services/mockCreateEvent'
+import { createEvent } from '../../services/eventsService'
 import { toast } from 'sonner'
 import { useAuthStore } from '../../../../store/authStore'
+import { useNavigate } from 'react-router-dom'
 
 export default function CreateEventPage() {
   const [submitting, setSubmitting] = useState(false)
   const user = useAuthStore((s) => s.user)
+  const navigate = useNavigate()
 
   async function handleSubmit(values: EventFormValues) {
     if (!user) return
     setSubmitting(true)
     try {
-      await mockCreateEvent({
+      await createEvent({
         name: values.name,
         date: new Date(values.date).toISOString(),
         capacity: values.capacity,
         description: values.description,
         ownerId: user.id,
         privacy: values.privacy,
-        locationCity: values.locationCity,
+        locationAddress: values.locationAddress,
         imageUrl: values.imageUrl,
         lat: values.lat,
         lng: values.lng,
       })
       toast.success('Event created')
+      navigate('/events/managed')
     } catch (e: any) {
       toast.error(e?.message ?? 'Failed to create event')
     } finally {
