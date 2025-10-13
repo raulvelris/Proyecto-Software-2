@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { Button } from '../../../../components/Button'
 import { toast } from 'sonner'
 import { listPublicEvents } from '../../services/eventsService'  // <-- el nuevo servicio
+import { useNavigate } from 'react-router-dom'
 
 export default function PublicEventsPage() {
   const [events, setEvents] = useState<any[]>([])
+  const navigate = useNavigate()
 
   useEffect(() => {
     listPublicEvents()
@@ -29,7 +31,7 @@ export default function PublicEventsPage() {
               <Button onClick={() => toast('Attendance confirmed')}>
                 <i className="bi bi-check2-circle me-2" />Confirm attendance
               </Button>
-              <Button variant="secondary" onClick={() => window.location.assign(`/events/${e.id}`)}>
+              <Button variant="secondary" onClick={() => navigate(`/events/${e.id}`)}>
                 <i className="bi bi-info-circle me-2" />Details
               </Button>
             </div>

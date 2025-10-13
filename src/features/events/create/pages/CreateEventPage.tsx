@@ -14,12 +14,15 @@ export default function CreateEventPage() {
     try {
       await mockCreateEvent({
         name: values.name,
-        date: values.date,
+        date: new Date(values.date).toISOString(),
         capacity: values.capacity,
         description: values.description,
         ownerId: user.id,
         privacy: values.privacy,
         locationCity: values.locationCity,
+        imageUrl: values.imageUrl,
+        lat: values.lat,
+        lng: values.lng,
       })
       toast.success('Event created')
     } catch (e: any) {

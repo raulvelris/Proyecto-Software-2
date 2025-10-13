@@ -39,6 +39,14 @@ export function getAuthHeaders(): HeadersInit {
 export async function handleApiResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    
+    // Si es un error 401 (no autorizado), limpiar el token y redirigir al login
+    if (response.status === 401) {
+      localStorage.removeItem('auth_token');
+      // Disparar evento personalizado para que el store reaccione
+      window.dispatchEvent(new CustomEvent('auth:logout'));
+    }
+    
     throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
   }
   

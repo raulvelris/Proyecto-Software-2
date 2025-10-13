@@ -19,5 +19,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   isAuthenticated: false,
   login: (user, token) => set({ user, token: token ?? 'mock-token', isAuthenticated: true }),
-  logout: () => set({ user: null, token: null, isAuthenticated: false }),
+  logout: () => {
+    localStorage.removeItem('auth_token')
+    set({ user: null, token: null, isAuthenticated: false })
+  },
 }))
+
+// Escuchar eventos de logout desde la API
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth:logout', () => {
+    useAuthStore.getState().logout()
+  })
+}
