@@ -15,7 +15,6 @@ import ManagedEventsPage from '../features/events/managed/pages/ManagedEventsPag
 import EventDetailPage from '../features/events/details/pages/EventDetailPage'
 import PublicEventsPage from '../features/events/public/pages/PublicEventsPage'
 import InvitationsInboxPage from '../features/events/invitations/pages/InvitationsInboxPage'
-import GuestsListPage from '../features/events/guests/pages/GuestsListPage'
 import AttendedEventsPage from '../features/events/attended/pages/AttendedEventsPage'
 
 import { PrivateRoute } from './privateRoute'
@@ -35,8 +34,7 @@ export const router = createBrowserRouter([
       { path: '/events/create', element: <CreateEventPage /> },
       { path: '/events/managed', element: <ManagedEventsPage /> },
       { path: '/invitations', element: <InvitationsInboxPage /> },
-      { path: '/guests', element: <GuestsListPage /> },
-      { path: '/attended', element: <AttendedEventsPage /> },
+{ path: '/attended', element: <AttendedEventsPage /> },
       { path: '/profile', element: <ProfilePage /> },
     ],
   },
