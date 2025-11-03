@@ -1,0 +1,64 @@
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import Input from '../../../components/Input'
+import { Button } from '../../../components/Button'
+import { useAuthStore } from '../../../store/authStore'
+import { toast } from 'sonner'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { login as backendLogin } from '../services/authService'
+
+const schema = z.object({
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+})
+
+type FormValues = z.infer<typeof schema>
+
+export default function LoginPage() {
+  const navigate = useNavigate()
+  const location = useLocation() as any
+  const login = useAuthStore((s) => s.login)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: '', password: '' } })
+
+  async function onSubmit(values: FormValues) {
+    try {
+      const res = await backendLogin(values.email, values.password)
+      const userForStore = {
+        id: String(res.user.usuario_id),
+        name: [res.user.nombre, res.user.apellido].filter(Boolean).join(' ') || res.user.correo,
+        email: res.user.correo,
+      }
+      // Persist token for API calls
+      localStorage.setItem('auth_token', res.token)
+      login(userForStore, res.token)
+      toast.success('Welcome back!')
+      const redirect = location.state?.from?.pathname ?? '/events/public'
+      navigate(redirect, { replace: true })
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Login failed')
+    }
+  }
+
+  return (
+    <div>
+      <h1 className="text-xl font-semibold mb-1">Inicia sesión</h1>
+      <p className="text-sm text-slate-400 mb-6">Accede a tus eventos e invitaciones</p>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <Input label="Correo" type="email" placeholder="tu@ejemplo.com" error={errors.email?.message} {...register('email')} />
+        <Input label="Contraseña" type="password" placeholder="••••••••" error={errors.password?.message} {...register('password')} />
+        <Button disabled={isSubmitting} className="w-full">{isSubmitting ? 'Signing in…' : 'Sign in'}</Button>
+      </form>
+
+      <p className="text-sm text-slate-400 mt-4">
+        ¿No tienes cuenta? <Link className="text-blue-400 hover:underline" to="/register">Create una</Link>
+      </p>
+    </div>
+  )
+}
