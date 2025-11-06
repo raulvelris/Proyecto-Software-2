@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -18,7 +19,15 @@ type FormValues = z.infer<typeof schema>
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation() as any
-  const login = useAuthStore((s) => s.login)
+  const { login, isAuthenticated } = useAuthStore()
+
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirect = location.state?.from?.pathname ?? '/events/public'
+      navigate(redirect, { replace: true })
+    }
+  }, [isAuthenticated, navigate, location])
 
   const {
     register,
@@ -35,13 +44,12 @@ export default function LoginPage() {
         email: res.user.correo,
       }
       // Persist token for API calls
-      localStorage.setItem('auth_token', res.token)
       login(userForStore, res.token)
-      toast.success('Welcome back!')
+      toast.success('Bienvenido/a!')
       const redirect = location.state?.from?.pathname ?? '/events/public'
       navigate(redirect, { replace: true })
     } catch (e: any) {
-      toast.error(e?.message ?? 'Login failed')
+      toast.error(e?.message ?? 'Error al iniciar sesión')
     }
   }
 

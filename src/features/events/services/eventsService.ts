@@ -1,3 +1,4 @@
+// CADA UNO DEBE EN IR EN EL SERVICE QUE LE CORRESPONDE, QUE HACE AQUI ESTO?
 import { API_CONFIG, handleApiResponse, getAuthHeaders } from '../../../config/api.ts'
 
 export async function listPublicEvents(usuarioId?: number | string) {
@@ -43,3 +44,4 @@ export async function createEvent(payload: {
   })
   return handleApiResponse<{ success: boolean; evento: { id: number } }>(response)
 }
+// MOVER TODO

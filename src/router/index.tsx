@@ -20,25 +20,7 @@ import AttendedEventsPage from '../features/events/attended/pages/AttendedEvents
 import { PrivateRoute } from './privateRoute'
 
 export const router = createBrowserRouter([
-  {
-    element: (
-      <PrivateRoute>
-        <MainLayout />
-      </PrivateRoute>
-    ),
-    children: [
-      { index: true, element: <Navigate to="/events/public" replace /> },
-      // All pages require authentication
-      { path: '/events/public', element: <PublicEventsPage /> },
-      { path: '/events/:id', element: <EventDetailPage /> },
-      { path: '/events/create', element: <CreateEventPage /> },
-      { path: '/events/managed', element: <ManagedEventsPage /> },
-      { path: '/invitations', element: <InvitationsInboxPage /> },
-{ path: '/attended', element: <AttendedEventsPage /> },
-      { path: '/profile', element: <ProfilePage /> },
-    ],
-  },
-  // Auth pages
+  // Rutas públicas (sin autenticación)
   {
     element: <AuthLayout />,
     children: [
@@ -48,7 +30,28 @@ export const router = createBrowserRouter([
       { path: '/activate/:token', element: <ActivateAccountPage /> },
     ],
   },
-  { path: '*', element: <Navigate to="/login" replace /> },
+  // Rutas protegidas (requieren autenticación)
+  {
+    element: (
+      <PrivateRoute>
+        <MainLayout />
+      </PrivateRoute>
+    ),
+    children: [
+      { index: true, element: <Navigate to="/events/public" replace /> },
+      { path: '/events/public', element: <PublicEventsPage /> },
+      { path: '/events/:id', element: <EventDetailPage /> },
+      { path: '/events/create', element: <CreateEventPage /> },
+      { path: '/events/managed', element: <ManagedEventsPage /> },
+      { path: '/invitations', element: <InvitationsInboxPage /> },
+      { path: '/attended', element: <AttendedEventsPage /> },
+      { path: '/profile', element: <ProfilePage /> },
+      // Redirección de rutas no encontradas a la página principal
+      { path: '*', element: <Navigate to="/events/public" replace /> },
+    ],
+  },
+  // Redirigir la ruta raíz al login
+  { path: '/', element: <Navigate to="/login" replace /> },
 ])
 
 export default router

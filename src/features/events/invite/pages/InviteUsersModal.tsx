@@ -25,14 +25,14 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
   const [noEligibleUsers, setNoEligibleUsers] = useState<NoEligibleItem[]>([])
 
   // Attendees
-  const [selectedUsers, setSelectedUsers] = useState<UsuarioTipo[]>([])
-  const [pendientes, setPendientes] = useState(0)
-  const [limite, setLimite] = useState(0)
+  const [selectedAttendees, setSelectedAttendees] = useState<UsuarioTipo[]>([])
+  const [pendientesAttendees, setPendientesAttendees] = useState(0)
+  const [limiteAttendees, setLimiteAttendees] = useState(0)
 
   // Coorganizers
   const [selectedCoorganizers, setSelectedCoorganizers] = useState<UsuarioTipo[]>([])
   const [pendientesCoorganizers, setPendientesCoorganizers] = useState(0)
-  const [limiteCoorganizers, setLimiteCoorganizers] = useState(0) 
+  const [limiteCoorganizers, setLimiteCoorganizers] = useState(0)
 
   const getUserFullName = (user: UsuarioTipo) => {
     const anyUser = user as any
@@ -42,6 +42,7 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
     return `${nombre ?? ''} ${apellido ?? ''}`.trim()
   }
 
+  // Solo ocultar usuarios ya seleccionados (sin tocar noElegibles)
   const debounceSearch = useCallback(() => {
     let timeoutId: ReturnType<typeof setTimeout>
     return (query: string) => {
@@ -51,7 +52,15 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
         setSearching(true)
         try {
           const results = await buscarUsuarios(query)
-          setUsers(results)
+
+          const filtered = results.filter(u => {
+            const uid = Number(u.usuario_id)
+            const selectedInAttendees = selectedAttendees.some(s => Number(s.usuario_id) === uid)
+            const selectedInCoorgs   = selectedCoorganizers.some(s => Number(s.usuario_id) === uid)
+            return !selectedInAttendees && !selectedInCoorgs
+          })
+
+          setUsers(filtered)
         } catch {
           setUsers([])
         } finally {
@@ -59,7 +68,7 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
         }
       }, 300)
     }
-  }, [])
+  }, [selectedAttendees, selectedCoorganizers])
 
   useEffect(() => {
     const debounced = debounceSearch()
@@ -84,12 +93,10 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
     const fetchPendientes = async () => {
       try {
         const data = await obtenerConteoPendientes(effectiveEventId)
-        setPendientes(data.pendientes)
-        setLimite(data.limite)
-        
-        // Simulación temporal
-        setPendientesCoorganizers(0)
-        setLimiteCoorganizers(3)
+        setPendientesAttendees(data.pendientesParaAsistente)
+        setLimiteAttendees(data.limiteAsistentes)
+        setPendientesCoorganizers(data.pendientesParaCoorganizador)
+        setLimiteCoorganizers(data.limiteCoorganizadores)
       } catch (err) {
         console.error(err)
       }
@@ -101,36 +108,49 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
     if (!open) {
       setUserInput('')
       setUsers([])
-      setSelectedUsers([])
+      setSelectedAttendees([])
+      setSelectedCoorganizers([])
     }
   }, [open])
 
-  // obtener listas dinámicas según tab activa
   const currentSelected =
-    activeTab === 'attendees' ? selectedUsers : selectedCoorganizers
+    activeTab === 'attendees' ? selectedAttendees : selectedCoorganizers
   const setCurrentSelected =
-    activeTab === 'attendees' ? setSelectedUsers : setSelectedCoorganizers
-
+    activeTab === 'attendees' ? setSelectedAttendees : setSelectedCoorganizers
   const currentPendientes =
-    activeTab === 'attendees' ? pendientes : pendientesCoorganizers
-  const currentLimite = activeTab === 'attendees' ? limite : limiteCoorganizers
-
+    activeTab === 'attendees' ? pendientesAttendees : pendientesCoorganizers
+  const currentLimite = activeTab === 'attendees' ? limiteAttendees : limiteCoorganizers
   const bloqueado = currentPendientes + currentSelected.length >= currentLimite
-  // fin obtener listas dinámicas según tab activa
 
   const handleUserSelect = (user: UsuarioTipo) => {
     const uid = Number(user.usuario_id)
     const maxSelected = 10
+    const totalSelected = selectedAttendees.length + selectedCoorganizers.length
 
-    if (selectedUsers.length >= maxSelected) {
+    if (totalSelected >= maxSelected) {
       toast.error(`You can select up to ${maxSelected} users only`)
+      return
+    }
+
+    if (currentSelected.some(u => u.usuario_id === uid)) {
+      const role = activeTab === 'attendees' ? 'attendee' : 'co-organizer'
+      toast.error(`${getUserFullName(user)} is already selected as ${role}`)
+      return
+    }
+
+    const otherList = activeTab === 'attendees' ? selectedCoorganizers : selectedAttendees
+    if (otherList.some(u => u.usuario_id === uid)) {
+      const otherRole = activeTab === 'attendees' ? 'co-organizer' : 'attendee'
+      toast.error(`${getUserFullName(user)} is already selected as ${otherRole}`)
       return
     }
 
     const existing = noEligibleUsers.find(u => u.usuario_id === uid)
     if (existing) {
-      if (existing.tipo === 'pendiente') {
-        toast.error(`${getUserFullName(user)} has a pending invitation`)
+      if (existing.tipo === 'pendiente_asistente') {
+        toast.error(`${getUserFullName(user)} has a pending invitation as an attendee`)
+      } else if (existing.tipo === 'pendiente_coorganizador') {
+        toast.error(`${getUserFullName(user)} has a pending invitation as a co-organizer`)
       } else if (existing.tipo === 'participante') {
         toast.error(`${getUserFullName(user)} is already participating`)
       }
@@ -142,67 +162,87 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
       return
     }
 
-    if (!currentSelected.find(u => u.usuario_id === uid)) {
-      setCurrentSelected(prev => [...prev, user])
-    }
-
+    setCurrentSelected(prev => [...prev, user])
     setUserInput('')
     setUsers([])
   }
 
-  const handleRemoveSelected = (usuario_id: number | string) => {
-    setCurrentSelected(prev => prev.filter(u => u.usuario_id !== usuario_id))
+  const handleRemoveSelected = (usuario_id: number | string, type: 'attendees' | 'coorganizers') => {
+    if (type === 'attendees') {
+      setSelectedAttendees(prev => prev.filter(u => u.usuario_id !== usuario_id))
+    } else {
+      setSelectedCoorganizers(prev => prev.filter(u => u.usuario_id !== usuario_id))
+    }
   }
 
   const handleSendInvitation = async () => {
-    if (!effectiveEventId || currentSelected.length === 0) {
+    const totalSelected = selectedAttendees.length + selectedCoorganizers.length
+    if (!effectiveEventId || totalSelected === 0) {
       toast.error('Select at least one user and ensure event ID is provided')
       return
     }
 
     setLoading(true)
     try {
-      const result = await invitarUsuarios(
-        effectiveEventId,
-        currentSelected.map(u => u.usuario_id)
-      )
+      const allUsers = [
+        ...selectedAttendees.map(u => ({
+          usuario_id: u.usuario_id,
+          esParaCoorganizar: false
+        })),
+        ...selectedCoorganizers.map(u => ({
+          usuario_id: u.usuario_id,
+          esParaCoorganizar: true
+        }))
+      ]
+
+      const result = await invitarUsuarios(effectiveEventId, allUsers)
       const resultados = result.resultados ?? []
 
-      let sentCount = 0
+      let sentAttendees = 0
+      let sentCoorganizers = 0
       let alreadyCount = 0
       let notFoundCount = 0
 
       resultados.forEach((r: any) => {
-        if (r.status === 'Invitation sent') sentCount++
-        else if (r.status === 'Already invited') alreadyCount++
-        else if (r.status === 'User not found') notFoundCount++
+        if (r.status === 'Invitation sent') {
+          if (r.esParaCoorganizar) {
+            sentCoorganizers++
+          } else {
+            sentAttendees++
+          }
+        } else if (r.status === 'Already invited') {
+          alreadyCount++
+        } else if (r.status === 'User not found') {
+          notFoundCount++
+        }
       })
 
-      if (sentCount) toast.success(`${sentCount} user(s) invited successfully`)
+      if (sentAttendees > 0 || sentCoorganizers > 0) {
+        const attendeeText = sentAttendees > 0 ? `${sentAttendees} user(s) as attendee(s)` : '';
+        const separator = sentAttendees > 0 && sentCoorganizers > 0 ? ' and ' : '';
+        const coorganizerText = sentCoorganizers > 0 ? `${sentCoorganizers} user(s) as co-organizer(s)` : '';
+        toast.success(`Successfully invited: ${attendeeText}${separator}${coorganizerText}`);
+      }
+
       if (alreadyCount) toast.error(`${alreadyCount} user(s) were already invited`)
       if (notFoundCount) toast.error(`${notFoundCount} user(s) not found`)
 
-      setNoEligibleUsers(prev => [
-        ...prev,
-        ...resultados
-          .filter(r => r.status === 'Invitation sent')
-          .map((r: any) => ({
-            usuario_id: Number(r.usuario_id),
-            tipo: 'pendiente' as const
-          }))
-      ])
+      const nuevosNoEligibles = resultados
+        .filter(r => r.status === 'Invitation sent')
+        .map(r => ({
+          usuario_id: Number(r.usuario_id),
+          tipo: r.esParaCoorganizar ? 'pendiente_coorganizador' as const : 'pendiente_asistente' as const
+        }))
 
-      // actualizar conteo de invitaciones pendientes
-      if (activeTab === 'attendees') {
-        setPendientes(prev => prev + sentCount)
-        setSelectedUsers([])
-      } else {
-        setPendientesCoorganizers(prev => prev + sentCount)
-        setSelectedCoorganizers([])
-      }
-      // fin actualizar conteo de invitaciones pendientes
+      // Actualizar estados
+      setNoEligibleUsers(prev => [...prev, ...nuevosNoEligibles])
+      setPendientesAttendees(prev => prev + sentAttendees)
+      setPendientesCoorganizers(prev => prev + sentCoorganizers)
 
+      setSelectedAttendees([])
+      setSelectedCoorganizers([])
     } catch (err: any) {
+      console.error('Error sending invitations:', err)
       toast.error(err.message ?? 'Failed to send invitations')
     } finally {
       setLoading(false)
@@ -284,10 +324,12 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
                   const tipo = noEligibleUsers.find(u => u.usuario_id === uid)?.tipo
                   const isBlocked = Boolean(tipo)
                   const mensaje =
-                    tipo === 'pendiente'
-                      ? 'Pending invitation'
+                    tipo === 'pendiente_asistente'
+                      ? 'Asistente pendiente'
+                      : tipo === 'pendiente_coorganizador'
+                      ? 'Coorganizador pendiente'
                       : tipo === 'participante'
-                      ? 'Already participating'
+                      ? 'Ya está participando'
                       : ''
                   return (
                     <div
@@ -309,32 +351,75 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
           </div>
 
           {/* Usuarios seleccionados */}
-          {currentSelected.length > 0 && (
-            <div className="max-h-60 overflow-y-auto space-y-2">
-              {currentSelected.map(user => (
-                <div
-                  key={user.usuario_id}
-                  className="bg-blue-600/20 border border-blue-600/30 rounded-md p-3 flex justify-between items-center"
-                >
-                  <div>
-                    <div className="text-blue-300 text-sm font-medium">
-                      {getUserFullName(user) || user.correo}
+          {(selectedAttendees.length > 0 || selectedCoorganizers.length > 0) && (
+            <div
+              className="space-y-3 mt-2 overflow-y-auto"
+              style={{
+                maxHeight: '220px', // limita el alto del bloque de seleccionados
+                overflowY: 'auto',
+                paddingRight: '4px', // pequeño espacio para scrollbar
+              }}
+            >
+              {selectedAttendees.length > 0 && (
+                <div>
+                  <h3 className="text-blue-400 font-semibold text-sm mb-1">Selected Attendees</h3>
+                  {selectedAttendees.map(user => (
+                    <div
+                      key={user.usuario_id}
+                      className="bg-blue-600/20 border border-blue-600/30 rounded-md p-3 flex justify-between items-center"
+                    >
+                      <div>
+                        <div className="text-blue-300 text-sm font-medium">
+                          {getUserFullName(user) || user.correo}
+                        </div>
+                        <div className="text-blue-400 text-xs">{user.correo}</div>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveSelected(user.usuario_id, 'attendees')}
+                        className="text-blue-400 hover:text-blue-300"
+                      >
+                        <i className="bi bi-x-lg" />
+                      </button>
                     </div>
-                    <div className="text-blue-400 text-xs">{user.correo}</div>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveSelected(user.usuario_id)}
-                    className="text-blue-400 hover:text-blue-300"
-                  >
-                    <i className="bi bi-x-lg" />
-                  </button>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {selectedCoorganizers.length > 0 && (
+                <div>
+                  <h3 className="text-purple-400 font-semibold text-sm mb-1">Selected Co-organizers</h3>
+                  {selectedCoorganizers.map(user => (
+                    <div
+                      key={user.usuario_id}
+                      className="bg-purple-600/20 border border-purple-600/30 rounded-md p-3 flex justify-between items-center"
+                    >
+                      <div>
+                        <div className="text-purple-300 text-sm font-medium">
+                          {getUserFullName(user) || user.correo}
+                        </div>
+                        <div className="text-purple-400 text-xs">{user.correo}</div>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveSelected(user.usuario_id, 'coorganizers')}
+                        className="text-purple-400 hover:text-purple-300"
+                      >
+                        <i className="bi bi-x-lg" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           <div className="flex justify-end mt-3">
-            <Button onClick={handleSendInvitation} disabled={loading || selectedUsers.length === 0}>
+            <Button
+              onClick={handleSendInvitation}
+              disabled={
+                loading ||
+                (selectedAttendees.length === 0 && selectedCoorganizers.length === 0)
+              }
+            >
               <i className="bi bi-envelope me-2" />
               {loading ? 'Sending...' : 'Send invite'}
             </Button>
@@ -344,3 +429,4 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
     </Modal>
   )
 }
+

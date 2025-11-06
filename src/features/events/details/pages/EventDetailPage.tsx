@@ -1,11 +1,33 @@
 import { useEffect, useState } from 'react'
-import InviteUsersModal from '../../invite/pages/InviteUsersModal.tsx'
+import InviteUsersModal from '../../invite/pages/InviteUsersModal'
 import { useParams } from 'react-router-dom'
-import { mockCancelEvent, type EventItem } from '../../create/services/mockCreateEvent.ts'
 import { Button } from '../../../../components/Button.tsx'
 import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
 import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
+
+// wtf que es esto??
+// Nota: tuve que pegarlo aqui pq habia muchos mocks y ya los quité PQ SE TRABAJA CON BACKEND
+export type EventStatus = 'draft' | 'published' | 'cancelled'
+export type EventPrivacy = 'public' | 'private'
+
+export type EventItem = {
+  id: string
+  name: string
+  date: string // start datetime ISO
+  capacity: number
+  description?: string
+  ownerId: string
+  privacy: EventPrivacy
+  status: EventStatus
+  locationCity: string
+  guestsCount?: number
+  imageUrl?: string
+  category?: string
+  lat?: number
+  lng?: number
+}
+// FIN DEL COMENTARIO, MOVERLO A OTRO LADO, AQUI NO
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -24,7 +46,7 @@ export default function EventDetailPage() {
       .then((r) => {
         const ev = r.evento as any
         const mapped: EventItem = {
-          id: String(ev.evento_id),
+          id: ev.evento_id,
           name: ev.titulo ?? 'Untitled Event',
           date: ev.fechaInicio ? new Date(ev.fechaInicio).toISOString() : new Date().toISOString(),
           capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
@@ -138,34 +160,7 @@ export default function EventDetailPage() {
             <div className="mt-3 grid grid-cols-1 gap-2">
               <Button variant="secondary" onClick={() => setShowInviteModal(true)}><i className="bi bi-envelope me-2" />Invite Attendees</Button>
               <Button variant="secondary" onClick={() => toast.info('Edit coming soon') }><i className="bi bi-pencil-square me-2" />Edit Event</Button>
-              <Button variant="danger" onClick={async () => {
-                if (!user) return toast.error('Login required')
-                try {
-                  await mockCancelEvent(event.id, user.id)
-                  toast.success('Event cancelled')
-                  const r = await getEventoDetalle(Number(event.id))
-                  const ev = r.evento as any
-                  const mapped: EventItem = {
-                    id: String(ev.evento_id),
-                    name: ev.titulo ?? 'Untitled Event',
-                    date: ev.fechaHora ? new Date(ev.fechaHora).toISOString() : new Date().toISOString(),
-                    capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
-                    description: ev.descripcion ?? undefined,
-                    ownerId: '0',
-                    privacy: (ev.privacidad === 1 ? 'public' : 'private'),
-                    status: 'published',
-                    locationCity: ev.ubicacion?.direccion ?? '',
-                    guestsCount: 0,
-                    imageUrl: ev.imagen ?? undefined,
-                    category: undefined,
-                    lat: typeof ev.ubicacion?.latitud === 'number' ? ev.ubicacion.latitud : undefined,
-                    lng: typeof ev.ubicacion?.longitud === 'number' ? ev.ubicacion.longitud : undefined,
-                  }
-                  setEvent(mapped)
-                } catch (e: any) {
-                  toast.error(e?.message ?? 'Could not cancel event')
-                }
-              }}><i className="bi bi-x-circle me-2" />Cancel Event</Button>
+              <Button variant="danger" onClick={() => toast.info('Cancel functionality will be implemented later') }><i className="bi bi-x-circle me-2" />Cancel Event</Button>
             </div>
           </div>
         )}

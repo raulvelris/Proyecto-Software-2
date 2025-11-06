@@ -5,8 +5,6 @@ import { useAuthStore } from '../store/authStore'
 export default function MainLayout() {
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-
   function handleLogout() {
     logout()
     navigate('/login')
@@ -32,11 +30,7 @@ export default function MainLayout() {
               <NavLink to="/profile" className={linkClass}><i className="bi bi-person-circle me-1" />Profile</NavLink>
             </div>
           </div>
-          {isAuthenticated ? (
-            <Button variant="secondary" onClick={handleLogout}><i className="bi bi-box-arrow-right me-1" />Logout</Button>
-          ) : (
-            <NavLink to="/login" className={linkClass}><i className="bi bi-box-arrow-in-right me-1" />Login</NavLink>
-          )}
+          <Button variant="secondary" onClick={handleLogout}><i className="bi bi-box-arrow-right me-1" />Logout</Button>
         </div>
       </nav>
       <main className="container-app py-8">
