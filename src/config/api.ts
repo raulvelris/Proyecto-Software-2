@@ -18,11 +18,16 @@ export const API_CONFIG = {
       COUNT: '/invitations/count'
     },
     EVENTOS: {
+      RECURSOS: (eventoId: string | number) => `/eventos/${eventoId}/recursos`,
       LIST: '/events/public',
       CREATE: '/eventos',
       DETAIL: '/eventos',
       ATTENDED: '/events/attended',
       MANAGED: '/events/managed',
+    },
+    RECURSOS: {
+      BASE: '/recursos',
+      BY_ID: (id: string | number) => `/recursos/${id}`,
     },
   },
 } as const;
