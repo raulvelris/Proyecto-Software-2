@@ -21,20 +21,34 @@ export const ResourcesSection = ({ eventoId, isOrganizer }: ResourcesSectionProp
 
   // Cargar recursos al montar el componente
   useEffect(() => {
+    let isMounted = true;
+    
     const loadResources = async () => {
       try {
         setIsLoading(true);
         const recursos = await getRecursosByEvento(Number(eventoId));
-        setResources(recursos);
+        if (isMounted) {
+          // Aseguramos que resources siempre sea un array
+          setResources(Array.isArray(recursos) ? recursos : []);
+        }
       } catch (error) {
         console.error('Error al cargar recursos:', error);
-        toast.error('No se pudieron cargar los recursos');
+        if (isMounted) {
+          toast.error('No se pudieron cargar los recursos');
+          setResources([]); // Aseguramos que resources sea un array vacío en caso de error
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadResources();
+    
+    return () => {
+      isMounted = false; // Limpieza para evitar actualizaciones en componentes desmontados
+    };
   }, [eventoId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -57,6 +71,7 @@ export const ResourcesSection = ({ eventoId, isOrganizer }: ResourcesSectionProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validaciones
     if (!formData.nombre.trim()) {
       toast.error('El nombre del recurso es requerido');
       return;
@@ -74,33 +89,42 @@ export const ResourcesSection = ({ eventoId, isOrganizer }: ResourcesSectionProp
 
     try {
       setIsSubmitting(true);
-      const data = new FormData();
-      data.append('nombre', formData.nombre);
-      data.append('tipo_recurso', formData.tipo_recurso === 'enlace' ? '1' : '2'); // Asumiendo 1=Enlace, 2=Archivo
-      data.append('evento_id', eventoId);
       
+      // Crear FormData para la petición
+      const formDataToSend = new FormData();
+      formDataToSend.append('nombre', formData.nombre.trim());
+      formDataToSend.append('tipo_recurso', formData.tipo_recurso === 'enlace' ? '1' : '2');
+      formDataToSend.append('evento_id', eventoId);
+      
+      // Agregar URL o archivo según corresponda
       if (formData.tipo_recurso === 'enlace') {
-        data.append('url', formData.url);
+        formDataToSend.append('url', formData.url.trim());
       } else if (formData.archivo) {
-        data.append('archivo', formData.archivo);
+        formDataToSend.append('archivo', formData.archivo);
       }
 
-      const newResource = await createRecurso(data);
+      // Crear el recurso
+      const newResource = await createRecurso(formDataToSend);
+      
+      // Actualizar el estado con el nuevo recurso
       setResources(prev => [...prev, newResource]);
       
-      // Reset form
+      // Resetear el formulario
       setFormData({
         nombre: '',
         url: '',
         tipo_recurso: 'enlace',
         archivo: null,
       });
-      setShowAddForm(false);
       
+      // Cerrar el formulario y mostrar mensaje de éxito
+      setShowAddForm(false);
       toast.success('Recurso agregado correctamente');
+      
     } catch (error) {
       console.error('Error al crear el recurso:', error);
-      toast.error('Error al agregar el recurso');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al crear el recurso';
+      toast.error(`Error: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -225,56 +249,68 @@ export const ResourcesSection = ({ eventoId, isOrganizer }: ResourcesSectionProp
         </div>
       )}
 
-      {resources.length === 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center items-center p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : !Array.isArray(resources) || resources.length === 0 ? (
         <div className="card p-5 text-center text-slate-400">
-          No hay recursos disponibles para este evento.
+          <i className="bi bi-folder-x text-4xl mb-2"></i>
+          <p>No hay recursos disponibles para este evento.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {resources.map((recurso) => (
-            <div key={recurso.id} className="card p-4 relative group">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-medium text-white">{recurso.nombre}</h3>
-                  <p className="text-sm text-slate-400 mt-1">
-                    Tipo: {recurso.tipo_recurso.nombre}
-                  </p>
+          {resources.map((recurso) => {
+            // Aseguramos que recurso y sus propiedades existan
+            if (!recurso) return null;
+            
+            const recursoId = recurso.id || Math.random().toString(36).substr(2, 9);
+            const nombre = recurso.nombre || 'Recurso sin nombre';
+            const tipoRecurso = recurso.tipo_recurso?.nombre || 'desconocido';
+            const esEnlace = tipoRecurso.toLowerCase() === 'enlace';
+            
+            return (
+              <div key={recursoId} className="card p-4 relative group hover:bg-slate-800 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-white truncate" title={nombre}>
+                      {nombre}
+                    </h3>
+                    <p className="text-sm text-slate-400 mt-1">
+                      Tipo: {tipoRecurso}
+                    </p>
+                  </div>
+                  {isOrganizer && (
+                    <button
+                      onClick={() => recurso.id && handleDelete(recurso.id)}
+                      className="text-slate-400 hover:text-red-500 transition-colors ml-2"
+                      title="Eliminar recurso"
+                      disabled={!recurso.id}
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  )}
                 </div>
-                {isOrganizer && (
-                  <button
-                    onClick={() => handleDelete(recurso.id)}
-                    className="text-slate-400 hover:text-red-500 transition-colors"
-                    title="Eliminar recurso"
-                  >
-                    <i className="bi bi-trash"></i>
-                  </button>
-                )}
+                
+                <div className="mt-3">
+                  {recurso.url ? (
+                    <a
+                      href={recurso.url}
+                      target={esEnlace ? "_blank" : "_self"}
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
+                      download={!esEnlace}
+                    >
+                      <i className={`bi ${esEnlace ? 'bi-box-arrow-up-right' : 'bi-download'} mr-1`}></i>
+                      {esEnlace ? 'Abrir enlace' : 'Descargar archivo'}
+                    </a>
+                  ) : (
+                    <span className="text-slate-500 text-sm">Sin enlace disponible</span>
+                  )}
+                </div>
               </div>
-              
-              <div className="mt-3">
-                {recurso.tipo_recurso.nombre.toLowerCase() === 'enlace' ? (
-                  <a
-                    href={recurso.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
-                  >
-                    <i className="bi bi-box-arrow-up-right mr-1"></i>
-                    Abrir enlace
-                  </a>
-                ) : (
-                  <a
-                    href={recurso.url}
-                    download
-                    className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
-                  >
-                    <i className="bi bi-download mr-1"></i>
-                    Descargar archivo
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

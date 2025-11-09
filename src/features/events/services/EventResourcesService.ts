@@ -14,15 +14,16 @@ export interface Recurso {
   updated_at?: string;
 }
 
-export const getRecursosByEvento = async (eventoId: number): Promise<Recurso[]> => {
+export const getRecursosByEvento = async (eventoId: number | string): Promise<Recurso[]> => {
   try {
-    const response = await apiService.get<Recurso[]>(
+    const response = await apiService.get<{ success: boolean; recursos: Recurso[] }>(
       API_CONFIG.ENDPOINTS.EVENTOS.RECURSOS(eventoId)
     );
-    return response;
+    // Aseguramos que siempre devolvamos un array, incluso si la respuesta no es la esperada
+    return Array.isArray(response?.recursos) ? response.recursos : [];
   } catch (error) {
     console.error('Error al obtener los recursos del evento:', error);
-    throw error;
+    return []; // Devolvemos un array vacío en caso de error para prevenir fallos
   }
 };
 
@@ -33,40 +34,48 @@ export const createRecurso = async (formData: FormData): Promise<Recurso> => {
       throw new Error('ID de evento no proporcionado');
     }
 
-    // Obtener el archivo si existe
-    const file = formData.get('archivo');
-    
-    // Si es un archivo, usamos el endpoint de subida de archivos
-    if (file instanceof File) {
-      // Crear un nuevo FormData para asegurar que los datos estén en el formato correcto
-      const uploadData = new FormData();
-      uploadData.append('archivo', file);
-      uploadData.append('nombre', formData.get('nombre')?.toString() || '');
-      uploadData.append('tipo_recurso', '2'); // 2 para archivo
-      uploadData.append('evento_id', eventoId.toString());
-      
-      // Si es un enlace, agregar la URL
-      const url = formData.get('url')?.toString();
-      if (url) {
-        uploadData.append('url', url);
-      }
-      
-      const eventIdStr = eventoId.toString();
-      return await apiService.uploadFile<Recurso>(
-        API_CONFIG.ENDPOINTS.EVENTOS.RECURSOS(eventIdStr),
-        file,
-        Object.fromEntries(uploadData.entries())
-      );
-    } else {
-      // Si no hay archivo, es un enlace
-      return await apiService.post<Recurso>(
-        API_CONFIG.ENDPOINTS.RECURSOS.BASE,
-        Object.fromEntries(formData.entries())
-      );
+    // Obtener los datos del formulario
+    const nombre = formData.get('nombre')?.toString() || '';
+    const tipoRecurso = formData.get('tipo_recurso')?.toString() || '1'; // 1 para enlace por defecto
+    const url = formData.get('url')?.toString();
+    const archivo = formData.get('archivo');
+
+    // Crear un nuevo FormData para la petición
+    const requestData = new FormData();
+    requestData.append('nombre', nombre);
+    requestData.append('tipo_recurso', tipoRecurso);
+    requestData.append('evento_id', eventoId.toString());
+
+    // Si es un enlace, agregar la URL
+    if (tipoRecurso === '1' && url) {
+      requestData.append('url', url);
     }
+    
+    // Si es un archivo, agregar el archivo
+    if (tipoRecurso === '2' && archivo instanceof File) {
+      requestData.append('archivo', archivo);
+    }
+
+    // Usar el endpoint correcto para crear el recurso
+    const response = await apiService.post<{ success: boolean; recurso: Recurso }>(
+      API_CONFIG.ENDPOINTS.EVENTOS.RECURSOS(eventoId.toString()),
+      requestData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    // Verificar si la respuesta tiene la estructura esperada
+    if (!response || !response.recurso) {
+      throw new Error('Formato de respuesta inesperado al crear el recurso');
+    }
+
+    return response.recurso;
   } catch (error) {
     console.error('Error al crear el recurso:', error);
-    throw error;
+    throw new Error(error instanceof Error ? error.message : 'Error desconocido al crear el recurso');
   }
 };
 
