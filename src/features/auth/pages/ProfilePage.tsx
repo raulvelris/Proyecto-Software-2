@@ -104,7 +104,7 @@ export default function ProfilePage() {
   }, [token])
 
   return (
-    <div className="flex justify-center items-center min-h-screen">
+    <div className="flex justify-center items-center">
       <div className="max-w-md w-full bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl shadow-lg p-8 text-center">
         {/* Título */}
         <h1 className="text-2xl font-semibold text-slate-100 mb-1">Mi Perfil</h1>
