@@ -1,7 +1,7 @@
 export type EventStatus = 'draft' | 'published' | 'cancelled'
 export type EventPrivacy = 'public' | 'private'
 
-export type EventItem = {
+export type Event = {
   id: string
   name: string
   date: string // start datetime ISO

@@ -5,7 +5,7 @@ import { Button } from '../../../../components/Button.tsx'
 import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
 import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
-import type { EventItem } from '../../../../types/EventTypes'
+import type { Event as EventItem } from '../../../../types/EventTipo.ts'
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()

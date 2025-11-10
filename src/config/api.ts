@@ -27,6 +27,10 @@ export const API_CONFIG = {
       ATTENDED: '/events/attended',
       MANAGED: '/events/managed',
     },
+    USUARIOS: {
+      INVITACIONES: '/usuarios',
+      NOTIFICACIONES: '/usuarios',
+    }
   },
 } as const;
 

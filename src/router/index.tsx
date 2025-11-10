@@ -14,7 +14,7 @@ import CreateEventPage from '../features/events/create/pages/CreateEventPage'
 import ManagedEventsPage from '../features/events/managed/pages/ManagedEventsPage'
 import EventDetailPage from '../features/events/details/pages/EventDetailPage'
 import PublicEventsPage from '../features/events/public/pages/PublicEventsPage'
-import InvitationsInboxPage from '../features/events/invitations/pages/InvitationsInboxPage'
+import InboxPage from '../features/events/inbox/pages/InboxPage'
 import AttendedEventsPage from '../features/events/attended/pages/AttendedEventsPage'
 
 import { PrivateRoute } from './privateRoute'
@@ -43,7 +43,7 @@ export const router = createBrowserRouter([
       { path: '/events/:id', element: <EventDetailPage /> },
       { path: '/events/create', element: <CreateEventPage /> },
       { path: '/events/managed', element: <ManagedEventsPage /> },
-      { path: '/invitations', element: <InvitationsInboxPage /> },
+      { path: '/notifications', element: <InboxPage /> },
       { path: '/attended', element: <AttendedEventsPage /> },
       { path: '/profile', element: <ProfilePage /> },
       // Redirección de rutas no encontradas a la página principal

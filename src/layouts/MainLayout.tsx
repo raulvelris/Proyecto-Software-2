@@ -26,7 +26,7 @@ export default function MainLayout() {
               <NavLink to="/events/managed" className={linkClass}><i className="bi bi-layout-text-window-reverse me-1" />Managed</NavLink>
               <NavLink to="/events/create" className={linkClass}><i className="bi bi-plus-circle me-1" />Create</NavLink>
               <NavLink to="/attended" className={linkClass}><i className="bi bi-check2-circle me-1" />Attended</NavLink>
-              <NavLink to="/invitations" className={linkClass}><i className="bi bi-envelope-open me-1" />Invitations</NavLink>
+              <NavLink to="/notifications" className={linkClass}><i className="bi bi-envelope-open me-1" />Notifications</NavLink>
               <NavLink to="/profile" className={linkClass}><i className="bi bi-person-circle me-1" />Profile</NavLink>
             </div>
           </div>

@@ -18,7 +18,7 @@ export type GetPrivateInvitationsResponse = {
 }
 
 export async function getPrivateInvitations(usuarioId: number): Promise<GetPrivateInvitationsResponse> {
-  const url = `${API_CONFIG.BASE_URL}/usuarios/${usuarioId}/invitaciones-privadas`
+  const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USUARIOS.INVITACIONES}/${usuarioId}/invitaciones-privadas`
   const res = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(),
@@ -27,7 +27,7 @@ export async function getPrivateInvitations(usuarioId: number): Promise<GetPriva
 }
 
 export async function acceptPrivateInvitation(invitacionUsuarioId: number) {
-  const url = `${API_CONFIG.BASE_URL}/invitaciones/respond`
+  const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.INVITACIONES.RESPOND}`
   const res = await fetch(url, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -37,7 +37,7 @@ export async function acceptPrivateInvitation(invitacionUsuarioId: number) {
 }
 
 export async function rejectPrivateInvitation(invitacionUsuarioId: number) {
-  const url = `${API_CONFIG.BASE_URL}/invitaciones/respond`
+  const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.INVITACIONES.RESPOND}`
   const res = await fetch(url, {
     method: 'POST',
     headers: getAuthHeaders(),
