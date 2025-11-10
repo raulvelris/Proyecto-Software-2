@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import EventForm, { type EventFormValues } from '../components/EventForm'
-import { createEvent } from '../../services/eventsService'
+import { createEvent } from '../service/CreateEventService'
 import { toast } from 'sonner'
 import { useAuthStore } from '../../../../store/authStore'
 import { useNavigate } from 'react-router-dom'

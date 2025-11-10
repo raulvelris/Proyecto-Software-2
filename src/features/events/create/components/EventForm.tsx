@@ -65,14 +65,6 @@ export default function EventForm({
     setValue('imageUrl', url, { shouldValidate: false })
   }
 
-  function openGoogleMapsSearch() {
-    // removed
-  }
-
-  function useCurrentLocation() {
-    // removed
-  }
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Input label="Event name" placeholder="Launch Party" error={errors.name?.message} {...register('name')} />
