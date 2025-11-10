@@ -23,7 +23,6 @@ export default function PublicEventsPage() {
         }
         let publicEvents = res.eventos || []
         // Filtrar eventos donde ya confirmó asistencia
-        // No se deberia filtrar aqui, se deberia filtrar en el backend
         if (user?.id) {
           const att = await listAttendedEvents(user.id)
           const attendedIds = new Set((att.eventos || []).map((e: any) => String(e.id)))
