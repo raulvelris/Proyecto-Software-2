@@ -5,29 +5,7 @@ import { Button } from '../../../../components/Button.tsx'
 import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
 import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
-
-// wtf que es esto??
-// Nota: tuve que pegarlo aqui pq habia muchos mocks y ya los quité PQ SE TRABAJA CON BACKEND
-export type EventStatus = 'draft' | 'published' | 'cancelled'
-export type EventPrivacy = 'public' | 'private'
-
-export type EventItem = {
-  id: string
-  name: string
-  date: string // start datetime ISO
-  capacity: number
-  description?: string
-  ownerId: string
-  privacy: EventPrivacy
-  status: EventStatus
-  locationCity: string
-  guestsCount?: number
-  imageUrl?: string
-  category?: string
-  lat?: number
-  lng?: number
-}
-// FIN DEL COMENTARIO, MOVERLO A OTRO LADO, AQUI NO
+import type { EventItem } from '../../../../types/EventTypes'
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -49,13 +27,14 @@ export default function EventDetailPage() {
           id: ev.evento_id,
           name: ev.titulo ?? 'Untitled Event',
           date: ev.fechaInicio ? new Date(ev.fechaInicio).toISOString() : new Date().toISOString(),
+          dateEnd: ev.fechaFin ? new Date(ev.fechaFin).toISOString() : undefined,
           capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
           description: ev.descripcion ?? undefined,
           ownerId: '0',
           privacy: (ev.privacidad === 1 ? 'public' : 'private'),
           status: 'published',
           locationCity: ev.ubicacion?.direccion ?? '',
-          guestsCount: 0,
+          guestsCount: typeof ev.attendeesCount === 'number' ? ev.attendeesCount : 0,
           imageUrl: ev.imagen ?? undefined,
           category: undefined,
           lat: typeof ev.ubicacion?.latitud === 'number' ? ev.ubicacion.latitud : undefined,
@@ -68,8 +47,10 @@ export default function EventDetailPage() {
     getParticipantesByEvento(Number(id))
       .then((r) => {
         const list = (r.participantes || []) as ParticipanteItem[]
-        const org = list.find((p) => (p.rol || '').toLowerCase() === 'organizador') || null
-        const others = list.filter((p) => (p.rol || '').toLowerCase() !== 'organizador')
+        const roleOf = (p: ParticipanteItem) => (p.rol || '').toLowerCase()
+        const org = list.find((p) => roleOf(p) === 'organizador') || null
+        // asistentes reales: excluir organizadores y coorganizadores
+        const others = list.filter((p) => !['organizador', 'coorganizador'].includes(roleOf(p)))
         setOrganizer(org)
         setAttendees(others)
       })
@@ -134,11 +115,23 @@ export default function EventDetailPage() {
       <aside className="space-y-5">
         <div className="card p-5">
           <ul className="text-sm space-y-3">
-            <li className="flex items-center gap-2"><i className="bi bi-calendar-event" /> {new Date(event.date).toLocaleDateString()}</li>
-            <li className="flex items-center gap-2"><i className="bi bi-clock" /> {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</li>
+            <li className="flex items-center gap-2">
+              <i className="bi bi-calendar-event" />
+              <span>
+                <span className="text-slate-400">Fecha inicio:</span> {new Date(event.date).toLocaleDateString()} — {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </li>
+            {event.dateEnd && (
+              <li className="flex items-center gap-2">
+                <i className="bi bi-calendar2-check" />
+                <span>
+                  <span className="text-slate-400">Fecha fin:</span> {new Date(event.dateEnd).toLocaleDateString()} — {new Date(event.dateEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </li>
+            )}
             <li className="flex items-center gap-2"><i className="bi bi-geo" /> {event.locationCity}</li>
             <li className="flex items-center gap-2"><i className="bi bi-shield-check" /> {event.privacy === 'public' ? 'Public Event' : 'Private Event'}</li>
-            <li className="flex items-center gap-2"><i className="bi bi-people" /> Capacity: {event.capacity}</li>
+            <li className="flex items-center gap-2"><i className="bi bi-people" /> Asistentes: {typeof event.guestsCount === 'number' ? event.guestsCount : attendees.length} / {event.capacity}</li>
           </ul>
         </div>
 

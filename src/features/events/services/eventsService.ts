@@ -17,9 +17,9 @@ export async function listAttendedEvents(usuarioId: number | string) {
   return handleApiResponse<{ success: boolean; eventos: any[] }>(response)
 }
 
-export async function listManagedEvents(usuarioId: number | string) {
+export async function listManagedEvents() {
   const response = await fetch(
-    `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTOS.MANAGED}/${usuarioId}`,
+    `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTOS.MANAGED}`,
     { headers: getAuthHeaders() }
   )
   return handleApiResponse<{ success: boolean; eventos: any[] }>(response)
