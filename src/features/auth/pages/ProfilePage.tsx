@@ -65,8 +65,9 @@ export default function ProfilePage() {
     setIsEditing(false)
   }
 
-  function handlePhotoChange(e) {
-    const file = e.target.files[0]
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+
+    const file = e.target.files![0]
     if (file) {
       const allowed = ['image/jpeg', 'image/jpg', 'image/png']
       const maxBytes = 2 * 1024 * 1024
@@ -79,7 +80,7 @@ export default function ProfilePage() {
         return
       }
       const reader = new FileReader()
-      reader.onload = (ev) => setPhoto(ev.target.result)
+      reader.onload = (ev) => setPhoto(ev.target?.result as string)
       reader.readAsDataURL(file)
     }
   }
