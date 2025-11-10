@@ -90,21 +90,28 @@ export const ResourcesSection = ({ eventoId, isOrganizer }: ResourcesSectionProp
     try {
       setIsSubmitting(true);
       
-      // Crear FormData para la petición
-      const formDataToSend = new FormData();
-      formDataToSend.append('nombre', formData.nombre.trim());
-      formDataToSend.append('tipo_recurso', formData.tipo_recurso === 'enlace' ? '1' : '2');
-      formDataToSend.append('evento_id', eventoId);
-      
-      // Agregar URL o archivo según corresponda
-      if (formData.tipo_recurso === 'enlace') {
-        formDataToSend.append('url', formData.url.trim());
-      } else if (formData.archivo) {
-        formDataToSend.append('archivo', formData.archivo);
-      }
+      let newResource: Recurso;
 
-      // Crear el recurso
-      const newResource = await createRecurso(formDataToSend);
+      if (formData.tipo_recurso === 'archivo' && formData.archivo) {
+        // Para archivos, crear FormData
+        const formDataToSend = new FormData();
+        formDataToSend.append('nombre', formData.nombre.trim());
+        formDataToSend.append('tipo_recurso', '2');
+        formDataToSend.append('evento_id', eventoId);
+        formDataToSend.append('archivo', formData.archivo);
+        formDataToSend.append('url', formData.archivo.name);
+
+        newResource = await createRecurso(formDataToSend);
+      } else {
+        // Para enlaces, crear FormData
+        const formDataToSend = new FormData();
+        formDataToSend.append('nombre', formData.nombre.trim());
+        formDataToSend.append('url', formData.url.trim());
+        formDataToSend.append('tipo_recurso', '1');
+        formDataToSend.append('evento_id', eventoId);
+        
+        newResource = await createRecurso(formDataToSend);
+      }
       
       // Actualizar el estado con el nuevo recurso
       setResources(prev => [...prev, newResource]);

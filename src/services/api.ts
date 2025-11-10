@@ -56,10 +56,32 @@ class ApiService {
     data?: any, 
     options: RequestInit = {}
   ): Promise<T> {
+    // Si es FormData, no agregar Content-Type header (el navegador lo hará automáticamente con el boundary)
+    if (data instanceof FormData) {
+      const url = `${this.baseUrl}${endpoint}`;
+      const token = localStorage.getItem('auth_token');
+      const headers: Record<string, string> = {};
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        body: data,
+        headers,
+        credentials: 'include',
+        ...options,
+      });
+
+      return await handleApiResponse<T>(response);
+    }
+
+    // Para JSON, usar el método request normal
     return this.request<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: data instanceof FormData ? data : JSON.stringify(data),
+      body: JSON.stringify(data),
     });
   }
 

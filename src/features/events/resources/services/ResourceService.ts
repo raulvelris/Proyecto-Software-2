@@ -26,42 +26,43 @@ export const getRecursosByEvento = async (eventoId: number): Promise<Recurso[]> 
   }
 };
 
-export const createRecurso = async (formData: FormData): Promise<Recurso> => {
+export const createRecurso = async (data: FormData | {
+  nombre: string;
+  url: string;
+  tipo_recurso: number;
+  evento_id: string;
+}): Promise<Recurso> => {
   try {
-    const eventoId = formData.get('evento_id');
-    if (!eventoId) {
-      throw new Error('ID de evento no proporcionado');
-    }
+    let eventoId: string;
+    let requestData: any;
 
-    // Obtener el archivo si existe
-    const file = formData.get('archivo');
-    
-    // Si es un archivo, usamos el endpoint de subida de archivos
-    if (file instanceof File) {
-      // Crear un nuevo FormData para asegurar que los datos estén en el formato correcto
-      const uploadData = new FormData();
-      uploadData.append('archivo', file);
-      uploadData.append('nombre', formData.get('nombre')?.toString() || '');
-      uploadData.append('tipo_recurso', '2'); // 2 para archivo
-      uploadData.append('evento_id', eventoId.toString());
-      
-      // Si es un enlace, agregar la URL
-      const url = formData.get('url')?.toString();
-      if (url) {
-        uploadData.append('url', url);
+    // Si es FormData (archivo), procesarlo
+    if (data instanceof FormData) {
+      eventoId = data.get('evento_id')?.toString() || '';
+      if (!eventoId) {
+        throw new Error('ID de evento no proporcionado');
       }
       
-      const eventIdStr = eventoId.toString();
-      return await apiService.uploadFile<Recurso>(
-        API_CONFIG.ENDPOINTS.EVENTOS.RECURSOS(eventIdStr),
-        file,
-        Object.fromEntries(uploadData.entries())
+      return await apiService.post<Recurso>(
+        API_CONFIG.ENDPOINTS.EVENTOS.RECURSOS(eventoId),
+        data
       );
     } else {
-      // Si no hay archivo, es un enlace
+      // Si es un objeto (enlace), enviarlo directamente como JSON
+      eventoId = data.evento_id;
+      if (!eventoId) {
+        throw new Error('ID de evento no proporcionado');
+      }
+
+      requestData = {
+        nombre: data.nombre,
+        url: data.url,
+        tipo_recurso: data.tipo_recurso
+      };
+
       return await apiService.post<Recurso>(
-        API_CONFIG.ENDPOINTS.RECURSOS.BASE,
-        Object.fromEntries(formData.entries())
+        API_CONFIG.ENDPOINTS.EVENTOS.RECURSOS(eventoId),
+        requestData
       );
     }
   } catch (error) {

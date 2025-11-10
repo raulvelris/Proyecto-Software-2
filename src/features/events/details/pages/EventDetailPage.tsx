@@ -105,36 +105,34 @@ export default function EventDetailPage() {
         </div>
 
         {isOrganizer && (
-          <>
-            <div className="card p-5 mt-5">
-              <h2 className="font-semibold mb-2">Asistentes</h2>
-              <ul className="text-sm divide-y divide-white/5">
-                {organizer && (
-                  <li className="py-2 flex items-center gap-2">
-                    <i className="bi bi-person-badge" />
-                    <span className="font-medium">{organizer.nombre} {organizer.apellido}</span>
-                    <span className="text-slate-400">– {organizer.correo}</span>
-                    <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">Organizador</span>
+          <div className="card p-5 mt-5">
+            <h2 className="font-semibold mb-2">Asistentes</h2>
+            <ul className="text-sm divide-y divide-white/5">
+              {organizer && (
+                <li className="py-2 flex items-center gap-2">
+                  <i className="bi bi-person-badge" />
+                  <span className="font-medium">{organizer.nombre} {organizer.apellido}</span>
+                  <span className="text-slate-400">– {organizer.correo}</span>
+                  <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">Organizador</span>
+                </li>
+              )}
+              {attendees.length ? (
+                attendees.map((a) => (
+                  <li key={a.participante_id} className="py-2 flex items-center gap-2">
+                    <i className="bi bi-person-circle" />
+                    <span>{a.nombre} {a.apellido}</span>
+                    <span className="text-slate-400">– {a.correo}</span>
                   </li>
-                )}
-                {attendees.length ? (
-                  attendees.map((a) => (
-                    <li key={a.participante_id} className="py-2 flex items-center gap-2">
-                      <i className="bi bi-person-circle" />
-                      <span>{a.nombre} {a.apellido}</span>
-                      <span className="text-slate-400">– {a.correo}</span>
-                    </li>
-                  ))
-                ) : (
-                  <li className="py-2 text-slate-400 text-sm">No hay asistentes aún.</li>
-                )}
-              </ul>
-            </div>
-            
-            {/* Sección de Recursos */}
-            <ResourcesSection eventoId={id || ''} isOrganizer={isOrganizer} />
-          </>
+                ))
+              ) : (
+                <li className="py-2 text-slate-400 text-sm">No hay asistentes aún.</li>
+              )}
+            </ul>
+          </div>
         )}
+        
+        {/* Sección de Recursos - visible para todos los usuarios */}
+        <ResourcesSection eventoId={id || ''} isOrganizer={isOrganizer} />
       </div>
 
       <aside className="space-y-5">
