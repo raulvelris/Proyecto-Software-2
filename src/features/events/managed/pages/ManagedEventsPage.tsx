@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { useAuthStore } from '../../../../store/authStore'
 import EmptyState from '../../../../components/EmptyState'
 import { Link } from 'react-router-dom'
 import { listManagedEvents } from '../../services/eventsService'
