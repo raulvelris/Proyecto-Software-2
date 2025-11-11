@@ -14,11 +14,11 @@ export const API_CONFIG = {
       ACTIVATE: '/auth/activate'
     },
     INVITACIONES: {
-      SEARCH: '/invitations/search',
-      SEND: '/invitations/send',
-      RESPOND: '/invitations/respond',
-      GET_NO_ELIGIBLE: '/invitations/no-eligible',
-      COUNT: '/invitations/count'
+      SEARCH: '/send-invitations/search',
+      SEND: '/send-invitations/send',
+      RESPOND: '/send-invitations/respond',
+      GET_NO_ELIGIBLE: '/send-invitations/no-eligible',
+      COUNT: '/send-invitations/count'
     },
     EVENTOS: {
       LIST: '/events/public',
