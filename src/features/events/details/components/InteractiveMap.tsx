@@ -38,14 +38,14 @@ export default function InteractiveMap({ coordinates, eventName, locationCity, a
           options={{
             zoomControl: true,
             streetViewControl: false,
-            mapTypeControl: true,
+            mapTypeControl: false,
             fullscreenControl: true,
           }}
         >
           <Marker
             position={coordinates}
             onClick={handleMarkerClick}
-            animation={google.maps.Animation.DROP}
+            animation={window.google?.maps?.Animation?.DROP} // <-- SEGURO
           />
           
           {showInfoWindow && (
