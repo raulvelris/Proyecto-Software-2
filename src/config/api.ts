@@ -21,18 +21,17 @@ export const API_CONFIG = {
       COUNT: '/invitations/count'
     },
     EVENTOS: {
-      LIST: '/events/public',
+      RECURSOS: (eventoId: string | number) => `/eventos/${eventoId}/recursos`,
+      PUBLIC: '/events/public',
       CREATE: '/eventos',
       DETAIL: '/eventos',
       ATTENDED: '/events/attended',
       MANAGED: '/events/managed',
-    },
-    EVENTO: {
       COORDINATES: '/event/coordinates',
     },
     USUARIOS: {
-      INVITACIONES: '/usuarios',
-      NOTIFICACIONES: '/usuarios',
+      INVITACIONES: '/private-invitations',
+      NOTIFICACIONES: '/notifications-action',
     }
   },
 } as const;

@@ -17,8 +17,8 @@ export type GetPrivateInvitationsResponse = {
   invitaciones: PrivateInvitationItem[]
 }
 
-export async function getPrivateInvitations(usuarioId: number): Promise<GetPrivateInvitationsResponse> {
-  const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USUARIOS.INVITACIONES}/${usuarioId}/invitaciones-privadas`
+export async function getPrivateInvitations(): Promise<GetPrivateInvitationsResponse> {
+  const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USUARIOS.INVITACIONES}`
   const res = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(),

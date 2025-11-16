@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../../../../components/Button.tsx'
 import { toast } from 'sonner'
-import { listPublicEvents, listAttendedEvents } from '../../services/eventsService'
+import { listPublicEvents } from '../../services/eventsService'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../../../../store/authStore'
 import { confirmPublicAttendance } from '../../details/service/EventDetailService'
+import { useAuthStore } from '../../../../store/authStore'
 
 export default function PublicEventsPage() {
   const [events, setEvents] = useState<any[]>([])
@@ -12,30 +12,8 @@ export default function PublicEventsPage() {
   const user = useAuthStore((s) => s.user)
 
   useEffect(() => {
-    let cancelled = false
-    async function load() {
-      try {
-        // Pasar usuarioId para excluir eventos donde es organizador
-        const res = await listPublicEvents(user?.id)
-        if (!res.success) {
-          toast.error('Error loading events')
-          return
-        }
-        let publicEvents = res.eventos || []
-        // Filtrar eventos donde ya confirmó asistencia
-        if (user?.id) {
-          const att = await listAttendedEvents(user.id)
-          const attendedIds = new Set((att.eventos || []).map((e: any) => String(e.id)))
-          publicEvents = publicEvents.filter((e: any) => !attendedIds.has(String(e.id)))
-        }
-        if (!cancelled) setEvents(publicEvents)
-      } catch {
-        toast.error('Error connecting to backend')
-      }
-    }
-    load()
-    return () => { cancelled = true }
-  }, [user?.id])
+    listPublicEvents().then((r) => setEvents(r.eventos as any))
+  }, [])
 
   if (!events.length) return <p className="text-slate-400">No public events yet.</p>
 

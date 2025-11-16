@@ -15,8 +15,8 @@ export type GetNotificationActionsResponse = {
   notificaciones_accion: NotificationActionItem[]
 }
 
-export async function getNotificationActions(usuarioId: number): Promise<GetNotificationActionsResponse> {
-  const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USUARIOS.NOTIFICACIONES}/${usuarioId}/notificaciones-accion`
+export async function getNotificationActions(): Promise<GetNotificationActionsResponse> {
+  const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USUARIOS.NOTIFICACIONES}`
   const res = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(),

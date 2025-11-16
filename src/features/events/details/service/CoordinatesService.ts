@@ -2,7 +2,7 @@ import { API_CONFIG, getAuthHeaders, handleApiResponse } from '../../../../confi
 
 export async function getCoordenadas(id: number) {
   const res = await fetch(
-    `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTO.COORDINATES}/${id}`,
+    `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTOS.COORDINATES}/${id}`,
     { headers: getAuthHeaders() }
   );
   return handleApiResponse<{ success: boolean; coordenadas: any }>(res);

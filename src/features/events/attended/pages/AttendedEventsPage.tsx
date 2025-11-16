@@ -3,19 +3,14 @@ import EmptyState from '../../../../components/EmptyState.tsx'
 import { Button } from '../../../../components/Button.tsx'
 import { useNavigate } from 'react-router-dom'
 import { listAttendedEvents } from '../../services/eventsService.ts'
-import { useAuthStore } from '../../../../store/authStore'
 
 export default function AttendedEventsPage() {
-  const user = useAuthStore((s) => s.user)
   const [events, setEvents] = useState<any[]>([])
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!user?.id) return
-    listAttendedEvents(user.id)
-      .then((r) => setEvents(r.eventos || []))
-      .catch(() => setEvents([]))
-  }, [user?.id])
+    listAttendedEvents().then((r) => setEvents(r.eventos as any))
+  }, [])
 
   if (!events.length) {
     return <EmptyState title="No attended events" description="Confirm attendance on public events to see them here." />
