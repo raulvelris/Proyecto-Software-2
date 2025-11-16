@@ -5,13 +5,16 @@ import { Button } from '../../../../components/Button.tsx'
 import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
 import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
+import { getCoordenadas } from '../../../../features/events/details/service/CoordinatesService.ts'
 import type { Event as EventItem } from '../../../../types/EventTipo.ts'
+import InteractiveMap from '../components/InteractiveMap'
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [event, setEvent] = useState<EventItem | null>(null)
   const [organizer, setOrganizer] = useState<ParticipanteItem | null>(null)
   const [attendees, setAttendees] = useState<ParticipanteItem[]>([])
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
   const user = useAuthStore((s) => s.user)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
@@ -24,21 +27,15 @@ export default function EventDetailPage() {
       .then((r) => {
         const ev = r.evento as any
         const mapped: EventItem = {
-          id: ev.evento_id,
           name: ev.titulo ?? 'Untitled Event',
-          date: ev.fechaInicio ? new Date(ev.fechaInicio).toISOString() : new Date().toISOString(),
+          dateStart: ev.fechaInicio ? new Date(ev.fechaInicio).toISOString() : undefined,
           dateEnd: ev.fechaFin ? new Date(ev.fechaFin).toISOString() : undefined,
           capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
           description: ev.descripcion ?? undefined,
-          ownerId: '0',
           privacy: (ev.privacidad === 1 ? 'public' : 'private'),
-          status: 'published',
           locationCity: ev.ubicacion?.direccion ?? '',
           guestsCount: typeof ev.attendeesCount === 'number' ? ev.attendeesCount : 0,
           imageUrl: ev.imagen ?? undefined,
-          category: undefined,
-          lat: typeof ev.ubicacion?.latitud === 'number' ? ev.ubicacion.latitud : undefined,
-          lng: typeof ev.ubicacion?.longitud === 'number' ? ev.ubicacion.longitud : undefined,
         }
         setEvent(mapped)
       })
@@ -51,12 +48,26 @@ export default function EventDetailPage() {
         const org = list.find((p) => roleOf(p) === 'organizador') || null
         // asistentes reales: excluir organizadores y coorganizadores
         const others = list.filter((p) => !['organizador', 'coorganizador'].includes(roleOf(p)))
-        setOrganizer(org)
+        setOrganizer(org) 
         setAttendees(others)
       })
       .catch(() => {
         setOrganizer(null)
         setAttendees([])
+      })
+    // Obtener coordenadas
+    getCoordenadas(Number(id))
+      .then((r) => {
+        if (r.success && r.coordenadas) {
+          const { latitud, longitud } = r.coordenadas
+          if (typeof latitud === 'number' && typeof longitud === 'number') {
+            setCoordinates({ lat: latitud, lng: longitud })
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Error al obtener coordenadas:', err)
+        setCoordinates(null)
       })
   }, [id])
 
@@ -115,12 +126,14 @@ export default function EventDetailPage() {
       <aside className="space-y-5">
         <div className="card p-5">
           <ul className="text-sm space-y-3">
-            <li className="flex items-center gap-2">
-              <i className="bi bi-calendar-event" />
-              <span>
-                <span className="text-slate-400">Fecha inicio:</span> {new Date(event.date).toLocaleDateString()} — {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </li>
+            {event.dateStart && (
+              <li className="flex items-center gap-2">
+                <i className="bi bi-calendar-event" />
+                <span>
+                  <span className="text-slate-400">Fecha inicio:</span> {new Date(event.dateStart).toLocaleDateString()} — {new Date(event.dateStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </li>
+            )}
             {event.dateEnd && (
               <li className="flex items-center gap-2">
                 <i className="bi bi-calendar2-check" />
@@ -135,16 +148,17 @@ export default function EventDetailPage() {
           </ul>
         </div>
 
-        <div className="card overflow-hidden">
-          <div className="h-56 w-full bg-white/5 flex items-center justify-center">
-            {event.lat && event.lng ? (
-              <img alt="Map" className="w-full h-56 object-cover"
-                   src={`https://maps.googleapis.com/maps/api/staticmap?center=${event.lat},${event.lng}&zoom=12&size=600x300&markers=color:red|${event.lat},${event.lng}${apiKey ? `&key=${apiKey}` : ''}`}
-              />
-            ) : (
-              <div className="p-4 text-sm text-slate-400">Map preview unavailable</div>
-            )}
-          </div>
+        <div className="card overflow-hidden p-4">
+          {coordinates ? (
+            <InteractiveMap
+              coordinates={coordinates}
+              eventName={event.name}
+              locationCity={event.locationCity}
+              apiKey={apiKey}
+            />
+          ) : (
+            <div className="p-4 text-sm text-slate-400">Map preview unavailable</div>
+          )}
         </div>
 
         {isOrganizer && (

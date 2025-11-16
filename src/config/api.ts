@@ -1,7 +1,7 @@
 // Rutas externas hacia el backend
 
 // Configuración de la API 
-const RAW_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const RAW_BASE = import.meta.env.VITE_API_URL; // 'http://localhost:5000'
 const BASE_WITH_API = RAW_BASE.endsWith('/api') ? RAW_BASE : `${RAW_BASE}/api`;
 
 export const API_CONFIG = {
@@ -14,11 +14,11 @@ export const API_CONFIG = {
       ACTIVATE: '/auth/activate'
     },
     INVITACIONES: {
-      SEARCH: '/send-invitations/search',
-      SEND: '/send-invitations/send',
-      RESPOND: '/send-invitations/respond',
-      GET_NO_ELIGIBLE: '/send-invitations/no-eligible',
-      COUNT: '/send-invitations/count'
+      SEARCH: '/invitations/search',
+      SEND: '/invitations/send',
+      RESPOND: '/invitations/respond',
+      GET_NO_ELIGIBLE: '/invitations/no-eligible',
+      COUNT: '/invitations/count'
     },
     EVENTOS: {
       LIST: '/events/public',
@@ -26,6 +26,9 @@ export const API_CONFIG = {
       DETAIL: '/eventos',
       ATTENDED: '/events/attended',
       MANAGED: '/events/managed',
+    },
+    EVENTO: {
+      COORDINATES: '/event/coordinates',
     },
     USUARIOS: {
       INVITACIONES: '/usuarios',
