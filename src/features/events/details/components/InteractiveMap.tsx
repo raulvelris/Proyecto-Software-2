@@ -1,4 +1,4 @@
-import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api'
+import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from '@react-google-maps/api'
 import { useState } from 'react'
 import { Button } from '../../../../components/Button'
 
@@ -28,39 +28,49 @@ export default function InteractiveMap({ coordinates, eventName, locationCity, a
     )
   }
 
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: apiKey,
+  })
+
+  if (loadError) {
+    return <div className="p-4 text-sm text-red-400">Error al cargar el mapa</div>
+  }
+
+  if (!isLoaded) {
+    return <div className="p-4 text-sm text-slate-400">Cargando mapa…</div>
+  }
+
   return (
     <div className="space-y-3">
-      <LoadScript googleMapsApiKey={apiKey}>
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={coordinates}
-          zoom={14}
-          options={{
-            zoomControl: true,
-            streetViewControl: false,
-            mapTypeControl: false,
-            fullscreenControl: true,
-          }}
-        >
-          <Marker
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={coordinates}
+        zoom={14}
+        options={{
+          zoomControl: true,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: true,
+        }}
+      >
+        <Marker
+          position={coordinates}
+          onClick={handleMarkerClick}
+          animation={window.google?.maps?.Animation?.DROP}
+        />
+        
+        {showInfoWindow && (
+          <InfoWindow
             position={coordinates}
-            onClick={handleMarkerClick}
-            animation={window.google?.maps?.Animation?.DROP} // <-- SEGURO
-          />
-          
-          {showInfoWindow && (
-            <InfoWindow
-              position={coordinates}
-              onCloseClick={() => setShowInfoWindow(false)}
-            >
-              <div className="p-2">
-                <h4 className="font-semibold text-slate-900">{eventName}</h4>
-                <p className="text-sm text-slate-600">{locationCity}</p>
-              </div>
-            </InfoWindow>
-          )}
-        </GoogleMap>
-      </LoadScript>
+            onCloseClick={() => setShowInfoWindow(false)}
+          >
+            <div className="p-2">
+              <h4 className="font-semibold text-slate-900">{eventName}</h4>
+              <p className="text-sm text-slate-600">{locationCity}</p>
+            </div>
+          </InfoWindow>
+        )}
+      </GoogleMap>
 
       <Button 
         variant="primary" 
