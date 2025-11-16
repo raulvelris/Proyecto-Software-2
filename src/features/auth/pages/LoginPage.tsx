@@ -42,6 +42,7 @@ export default function LoginPage() {
         id: String(res.user.usuario_id),
         name: [res.user.nombre, res.user.apellido].filter(Boolean).join(' ') || res.user.correo,
         email: res.user.correo,
+        photo: res.user.foto_perfil || '',
       }
       // Persist token for API calls
       login(userForStore, res.token)

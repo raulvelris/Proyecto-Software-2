@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from 'react'
-import { useAuthStore } from '../../../../store/authStore'
 import EmptyState from '../../../../components/EmptyState'
 import { Link } from 'react-router-dom'
 import { listManagedEvents } from '../../services/eventsService'
 
-type ManagedEvent = { id: string | number; name: string; dateStart: string; imageUrl?: string; capacity?: number }
+type ManagedEvent = { id: string | number; name: string; dateStart: string; imageUrl?: string; capacity?: number; managedAs?: 'Organizador' | 'Coorganizador' | null; isOrganizer?: boolean }
 
 export default function ManagedEventsPage() {
-  const user = useAuthStore((s) => s.user)
   const [events, setEvents] = useState<ManagedEvent[]>([])
 
   useEffect(() => {
-    if (!user) return
-    listManagedEvents(user.id).then((r) => setEvents(r.eventos as any))
-  }, [user])
+    listManagedEvents().then((r) => setEvents(r.eventos as any))
+  }, [])
 
   if (!events.length) {
     return (
@@ -35,6 +32,11 @@ export default function ManagedEventsPage() {
           <div className="p-4">
           <h3 className="font-semibold"><i className="bi bi-layout-text-window-reverse me-2" />{e.name}</h3>
           <p className="text-sm text-slate-400 mt-1">{new Date(e.dateStart).toLocaleString()}</p>
+          {e.managedAs && (
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-2 ${e.isOrganizer ? 'bg-green-600/30 text-green-300 border border-green-600/50' : 'bg-amber-600/30 text-amber-300 border border-amber-600/50'}`}>
+              {e.isOrganizer ? 'Creado' : 'Coorganizado'}
+            </span>
+          )}
           {typeof e.capacity !== 'undefined' && (
             <p className="text-sm text-slate-400">Capacity: {e.capacity}</p>
           )}

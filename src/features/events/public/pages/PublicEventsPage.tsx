@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../../../../components/Button.tsx'
 import { toast } from 'sonner'
-import { listPublicEvents, listAttendedEvents } from '../../services/eventsService.ts'
+import { listPublicEvents, listAttendedEvents } from '../../services/eventsService'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../../../store/authStore'
-import { confirmPublicAttendance } from '../../details/service/EventDetailService.ts'
+import { confirmPublicAttendance } from '../../details/service/EventDetailService'
 
 export default function PublicEventsPage() {
   const [events, setEvents] = useState<any[]>([])
@@ -23,7 +23,6 @@ export default function PublicEventsPage() {
         }
         let publicEvents = res.eventos || []
         // Filtrar eventos donde ya confirmó asistencia
-        // No se deberia filtrar aqui, se deberia filtrar en el backend
         if (user?.id) {
           const att = await listAttendedEvents(user.id)
           const attendedIds = new Set((att.eventos || []).map((e: any) => String(e.id)))

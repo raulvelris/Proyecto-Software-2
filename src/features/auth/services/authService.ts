@@ -32,6 +32,18 @@ export interface ActivateResponse {
   }
 }
 
+export interface LoginResponse {
+  success: boolean
+  user: {
+    usuario_id: number
+    correo: string
+    nombre: string | null
+    apellido: string | null
+    foto_perfil?: string | null
+  }
+  token: string
+}
+
 /**
  * Registra un nuevo usuario en el backend
  */
@@ -53,17 +65,9 @@ export async function registerUser(data: RegisterData): Promise<RegisterResponse
   return result
 }
 
-export interface LoginResponse {
-  success: boolean
-  user: {
-    usuario_id: number
-    correo: string
-    nombre: string | null
-    apellido: string | null
-  }
-  token: string
-}
-
+/**
+ * Inicia sesión con el correo y contraseña
+ */
 export async function login(correo: string, clave: string): Promise<LoginResponse> {
   const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
     method: 'POST',
