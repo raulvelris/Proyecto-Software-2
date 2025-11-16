@@ -1,134 +1,38 @@
 import { useState, useEffect } from 'react';
-import { Recurso, getRecursosByEvento, createRecurso, deleteRecurso } from '../../services/EventResourcesService';
+import { Recurso, getRecursosByEvento, deleteRecurso } from '../../services/EventResourcesService';
 import { toast } from 'sonner';
 
 interface ResourcesSectionProps {
   eventoId: string;
   isOrganizer: boolean;
+  refreshTrigger?: number;
 }
 
-export const ResourcesSection = ({ eventoId, isOrganizer }: ResourcesSectionProps) => {
+export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: ResourcesSectionProps) => {
   const [resources, setResources] = useState<Recurso[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [formData, setFormData] = useState({
-    nombre: '',
-    url: '',
-    tipo_recurso: 'enlace', // 'enlace' o 'archivo'
-    archivo: null as File | null,
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Cargar recursos al montar el componente
-  useEffect(() => {
-    let isMounted = true;
-    
-    const loadResources = async () => {
-      try {
-        setIsLoading(true);
-        const recursos = await getRecursosByEvento(Number(eventoId));
-        if (isMounted) {
-          // Aseguramos que resources siempre sea un array
-          setResources(Array.isArray(recursos) ? recursos : []);
-        }
-      } catch (error) {
-        console.error('Error al cargar recursos:', error);
-        if (isMounted) {
-          toast.error('No se pudieron cargar los recursos');
-          setResources([]); // Aseguramos que resources sea un array vacío en caso de error
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadResources();
-    
-    return () => {
-      isMounted = false; // Limpieza para evitar actualizaciones en componentes desmontados
-    };
-  }, [eventoId]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData(prev => ({
-        ...prev,
-        archivo: e.target.files![0]
-      }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validaciones
-    if (!formData.nombre.trim()) {
-      toast.error('El nombre del recurso es requerido');
-      return;
-    }
-
-    if (formData.tipo_recurso === 'enlace' && !formData.url.trim()) {
-      toast.error('La URL es requerida para recursos de tipo enlace');
-      return;
-    }
-
-    if (formData.tipo_recurso === 'archivo' && !formData.archivo) {
-      toast.error('Debes seleccionar un archivo');
-      return;
-    }
-
+  // Función para cargar recursos
+  const loadResources = async () => {
     try {
-      setIsSubmitting(true);
-      
-      // Crear FormData para la petición
-      const formDataToSend = new FormData();
-      formDataToSend.append('nombre', formData.nombre.trim());
-      formDataToSend.append('tipo_recurso', formData.tipo_recurso === 'enlace' ? '1' : '2');
-      formDataToSend.append('evento_id', eventoId);
-      
-      // Agregar URL o archivo según corresponda
-      if (formData.tipo_recurso === 'enlace') {
-        formDataToSend.append('url', formData.url.trim());
-      } else if (formData.archivo) {
-        formDataToSend.append('archivo', formData.archivo);
-      }
-
-      // Crear el recurso
-      const newResource = await createRecurso(formDataToSend);
-      
-      // Actualizar el estado con el nuevo recurso
-      setResources(prev => [...prev, newResource]);
-      
-      // Resetear el formulario
-      setFormData({
-        nombre: '',
-        url: '',
-        tipo_recurso: 'enlace',
-        archivo: null,
-      });
-      
-      // Cerrar el formulario y mostrar mensaje de éxito
-      setShowAddForm(false);
-      toast.success('Recurso agregado correctamente');
-      
+      setIsLoading(true);
+      const recursos = await getRecursosByEvento(Number(eventoId));
+      // Aseguramos que resources siempre sea un array
+      setResources(Array.isArray(recursos) ? recursos : []);
     } catch (error) {
-      console.error('Error al crear el recurso:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al crear el recurso';
-      toast.error(`Error: ${errorMessage}`);
+      console.error('Error al cargar recursos:', error);
+      toast.error('No se pudieron cargar los recursos');
+      setResources([]); // Aseguramos que resources sea un array vacío en caso de error
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
+
+  // Cargar recursos al montar el componente, cuando cambie el evento o cuando cambie el trigger
+  useEffect(() => {
+    loadResources();
+  }, [eventoId, refreshTrigger]);
+
 
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro de que deseas eliminar este recurso?')) {
@@ -153,101 +57,7 @@ export const ResourcesSection = ({ eventoId, isOrganizer }: ResourcesSectionProp
     <div className="mt-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Recursos del evento</h2>
-        {isOrganizer && (
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            {showAddForm ? 'Cancelar' : 'Agregar recurso'}
-          </button>
-        )}
       </div>
-
-      {showAddForm && (
-        <div className="card p-5 mb-6">
-          <h3 className="text-lg font-medium mb-4">Agregar nuevo recurso</h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
-                Nombre del recurso *
-              </label>
-              <input
-                type="text"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleInputChange}
-                className="w-full p-2 rounded bg-slate-700 border border-slate-600 text-white"
-                placeholder="Ej: Presentación del evento"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
-                Tipo de recurso *
-              </label>
-              <select
-                name="tipo_recurso"
-                value={formData.tipo_recurso}
-                onChange={handleInputChange}
-                className="w-full p-2 rounded bg-slate-700 border border-slate-600 text-white"
-              >
-                <option value="enlace">Enlace</option>
-                <option value="archivo">Archivo</option>
-              </select>
-            </div>
-
-            {formData.tipo_recurso === 'enlace' ? (
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  URL del recurso *
-                </label>
-                <input
-                  type="url"
-                  name="url"
-                  value={formData.url}
-                  onChange={handleInputChange}
-                  className="w-full p-2 rounded bg-slate-700 border border-slate-600 text-white"
-                  placeholder="https://ejemplo.com/recurso"
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Seleccionar archivo *
-                </label>
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  className="w-full p-2 rounded bg-slate-700 border border-slate-600 text-white"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
-                />
-                <p className="text-xs text-slate-400 mt-1">
-                  Formatos permitidos: PDF, Word, Excel, PowerPoint, imágenes
-                </p>
-              </div>
-            )}
-
-            <div className="flex justify-end space-x-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 border border-slate-600 rounded-md text-slate-300 hover:bg-slate-700 transition-colors"
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Guardando...' : 'Guardar recurso'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center p-8">
@@ -294,16 +104,13 @@ export const ResourcesSection = ({ eventoId, isOrganizer }: ResourcesSectionProp
                 
                 <div className="mt-3">
                   {recurso.url ? (
-                    <a
-                      href={recurso.url}
-                      target={esEnlace ? "_blank" : "_self"}
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
-                      download={!esEnlace}
+                    <button
+                      onClick={() => toast.info('Se implementará próximamente')}
+                      className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
                     >
                       <i className={`bi ${esEnlace ? 'bi-box-arrow-up-right' : 'bi-download'} mr-1`}></i>
                       {esEnlace ? 'Abrir enlace' : 'Descargar archivo'}
-                    </a>
+                    </button>
                   ) : (
                     <span className="text-slate-500 text-sm">Sin enlace disponible</span>
                   )}

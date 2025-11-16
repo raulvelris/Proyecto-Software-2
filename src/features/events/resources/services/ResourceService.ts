@@ -26,46 +26,51 @@ export const getRecursosByEvento = async (eventoId: number): Promise<Recurso[]> 
   }
 };
 
-export const createRecurso = async (formData: FormData): Promise<Recurso> => {
+// Crear recurso de tipo ENLACE (JSON normal, sin multipart)
+export const createRecursoEnlace = async (
+  eventoId: number,
+  data: {
+    nombre: string;
+    url: string;
+    tipo_recurso: string;
+  }
+): Promise<Recurso> => {
   try {
-    const eventoId = formData.get('evento_id');
-    if (!eventoId) {
-      throw new Error('ID de evento no proporcionado');
-    }
-
-    // Obtener el archivo si existe
-    const file = formData.get('archivo');
-    
-    // Si es un archivo, usamos el endpoint de subida de archivos
-    if (file instanceof File) {
-      // Crear un nuevo FormData para asegurar que los datos estén en el formato correcto
-      const uploadData = new FormData();
-      uploadData.append('archivo', file);
-      uploadData.append('nombre', formData.get('nombre')?.toString() || '');
-      uploadData.append('tipo_recurso', '2'); // 2 para archivo
-      uploadData.append('evento_id', eventoId.toString());
-      
-      // Si es un enlace, agregar la URL
-      const url = formData.get('url')?.toString();
-      if (url) {
-        uploadData.append('url', url);
-      }
-      
-      const eventIdStr = eventoId.toString();
-      return await apiService.uploadFile<Recurso>(
-        API_CONFIG.ENDPOINTS.EVENTOS.RECURSOS(eventIdStr),
-        file,
-        Object.fromEntries(uploadData.entries())
-      );
-    } else {
-      // Si no hay archivo, es un enlace
-      return await apiService.post<Recurso>(
-        API_CONFIG.ENDPOINTS.RECURSOS.BASE,
-        Object.fromEntries(formData.entries())
-      );
-    }
+    const endpoint = API_CONFIG.ENDPOINTS.EVENTOS.RECURSOS(eventoId);
+    console.log('📤 Enviando enlace como JSON:', data);
+    return await apiService.post<Recurso>(endpoint, data);
   } catch (error) {
-    console.error('Error al crear el recurso:', error);
+    console.error('Error al crear el recurso (enlace):', error);
+    throw error;
+  }
+};
+
+// Crear recurso de tipo ARCHIVO (FormData + multipart)
+export const createRecursoArchivo = async (
+  eventoId: number,
+  formData: FormData
+): Promise<Recurso> => {
+  try {
+    const endpoint = `${API_CONFIG.ENDPOINTS.EVENTOS.RECURSOS(eventoId)}/archivo`;
+    
+    const file = formData.get('archivo');
+    if (!(file instanceof File)) {
+      throw new Error('Debe proporcionar un archivo válido');
+    }
+    
+    console.log('📤 Enviando archivo como FormData:', {
+      nombre: formData.get('nombre'),
+      tipo_recurso: formData.get('tipo_recurso'),
+      archivo: file.name
+    });
+    
+    return await apiService.uploadFile<Recurso>(
+      endpoint,
+      file,
+      Object.fromEntries(formData.entries())
+    );
+  } catch (error) {
+    console.error('Error al crear el recurso (archivo):', error);
     throw error;
   }
 };

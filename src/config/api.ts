@@ -55,7 +55,24 @@ export function getAuthHeaders(): HeadersInit {
 // Función helper para manejar respuestas de la API
 export async function handleApiResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+    let errorData: any = {};
+    let errorText = '';
+    
+    // Intentar parsear el JSON de error
+    try {
+      errorText = await response.text();
+      if (errorText) {
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (parseError) {
+          // Si no es JSON válido, usar el texto como mensaje
+          errorData = { message: errorText };
+        }
+      }
+    } catch (e) {
+      // Si no se puede leer el texto, usar un objeto vacío
+      errorData = {};
+    }
     
     // Si es un error 401 (no autorizado), limpiar el token y redirigir al login
     if (response.status === 401) {
@@ -64,8 +81,19 @@ export async function handleApiResponse<T>(response: Response): Promise<T> {
       window.dispatchEvent(new CustomEvent('auth:logout'));
     }
     
-    throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+    // Construir el mensaje de error de forma segura
+    const errorMessage = (errorData && typeof errorData === 'object' && errorData.message) 
+      || (errorData && typeof errorData === 'object' && errorData.error)
+      || errorText
+      || `Error ${response.status}: ${response.statusText}`;
+    
+    throw new Error(String(errorMessage));
   }
   
-  return response.json();
+  // Si la respuesta es exitosa, parsear el JSON
+  try {
+    return await response.json();
+  } catch (e) {
+    throw new Error('Error al parsear la respuesta del servidor');
+  }
 }

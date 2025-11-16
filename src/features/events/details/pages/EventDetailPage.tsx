@@ -6,6 +6,7 @@ import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
 import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
 import { ResourcesSection } from '../../resources/components/ResourcesSection.tsx'
+import AddResourceModal from '../../resources/components/AddResourceModal.tsx'
 import { getCoordenadas } from '../../../../features/events/details/service/CoordinatesService.ts'
 import type { Event as EventItem } from '../../../../types/EventTipo.ts'
 import InteractiveMap from '../components/InteractiveMap'
@@ -18,6 +19,8 @@ export default function EventDetailPage() {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
   const user = useAuthStore((s) => s.user)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showAddResourceModal, setShowAddResourceModal] = useState(false)
+  const [resourceAddedTrigger, setResourceAddedTrigger] = useState(0)
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
   const isOrganizer = Boolean(organizer && user?.id && Number(organizer.usuario_id) === Number(user.id))
 
@@ -124,7 +127,11 @@ export default function EventDetailPage() {
             </div>
             
             {/* Sección de Recursos */}
-            <ResourcesSection eventoId={id || ''} isOrganizer={isOrganizer} />
+            <ResourcesSection 
+              eventoId={id || ''} 
+              isOrganizer={isOrganizer}
+              refreshTrigger={resourceAddedTrigger}
+            />
           </>
         )}
       </div>
@@ -172,6 +179,10 @@ export default function EventDetailPage() {
             <h3 className="font-semibold">Organizer Tools</h3>
             <div className="mt-3 grid grid-cols-1 gap-2">
               <Button variant="secondary" onClick={() => setShowInviteModal(true)}><i className="bi bi-envelope me-2" />Invite Attendees</Button>
+              <Button variant="secondary" onClick={() => setShowAddResourceModal(true)}>
+                <i className="bi bi-plus-circle me-2" />
+                Agregar recurso
+              </Button>
               <Button variant="secondary" onClick={() => toast.info('Edit coming soon') }><i className="bi bi-pencil-square me-2" />Edit Event</Button>
               <Button variant="danger" onClick={() => toast.info('Cancel functionality will be implemented later') }><i className="bi bi-x-circle me-2" />Cancel Event</Button>
             </div>
@@ -179,7 +190,15 @@ export default function EventDetailPage() {
         )}
       </aside>
       {isOrganizer && (
-        <InviteUsersModal open={showInviteModal} onClose={() => setShowInviteModal(false)} />
+        <>
+          <InviteUsersModal open={showInviteModal} onClose={() => setShowInviteModal(false)} />
+          <AddResourceModal 
+            open={showAddResourceModal} 
+            onClose={() => setShowAddResourceModal(false)}
+            eventoId={id || ''}
+            onResourceAdded={() => setResourceAddedTrigger(prev => prev + 1)}
+          />
+        </>
       )}
     </div>
   )
