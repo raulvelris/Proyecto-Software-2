@@ -15,8 +15,10 @@ export type GetNotificationActionsResponse = {
   notificaciones_accion: NotificationActionItem[]
 }
 
-export async function getNotificationActions(usuarioId: number): Promise<GetNotificationActionsResponse> {
-  const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USUARIOS.NOTIFICACIONES}/${usuarioId}/notificaciones-accion`
+export async function getNotificationActions(/* usuarioId: number */): Promise<GetNotificationActionsResponse> {
+  // The backend exposes this endpoint as GET /api/notifications-action and
+  // uses the authenticated user (from the JWT) to determine the target user.
+  const url = `${API_CONFIG.BASE_URL}/notifications-action`
   const res = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders(),

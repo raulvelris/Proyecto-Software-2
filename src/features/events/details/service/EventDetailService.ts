@@ -36,3 +36,26 @@ export async function getParticipantesByEvento(eventoId: number) {
   )
   return handleApiResponse<{ success: boolean; participantes: ParticipanteItem[] }>(res)
 }
+
+export async function desvincularme(eventoId: number, usuarioId: number) {
+  const res = await fetch(
+  `${API_CONFIG.BASE_URL}/eventos/${eventoId}/desvincular-evento`,
+    {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ usuario_id: usuarioId })
+    }
+  );
+  return handleApiResponse<{ success: boolean; message?: string }>(res);
+}
+
+export async function eliminarInvitado(eventoId: number, usuarioId: number) {
+  const res = await fetch(
+    `${API_CONFIG.BASE_URL}/eventos/${eventoId}/participantes/${usuarioId}/eliminar`,
+    {
+      method: 'POST',
+      headers: getAuthHeaders()
+    }
+  );
+  return handleApiResponse<{ success: boolean; message?: string }>(res);
+}

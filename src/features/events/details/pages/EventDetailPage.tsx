@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import InviteUsersModal from '../../invite/pages/InviteUsersModal'
 import { useParams } from 'react-router-dom'
 import { Button } from '../../../../components/Button.tsx'
+import Modal from '../../../../components/Modal'
 import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
-import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
+import { getEventoDetalle, getParticipantesByEvento, desvincularme, eliminarInvitado, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
 import type { Event as EventItem } from '../../../../types/EventTipo.ts'
 
 export default function EventDetailPage() {
@@ -14,8 +15,13 @@ export default function EventDetailPage() {
   const [attendees, setAttendees] = useState<ParticipanteItem[]>([])
   const user = useAuthStore((s) => s.user)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [toDeleteUser, setToDeleteUser] = useState<ParticipanteItem | null>(null)
+  const [isCoorganizer, setIsCoorganizer] = useState(false)
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
   const isOrganizer = Boolean(organizer && user?.id && Number(organizer.usuario_id) === Number(user.id))
+  const isParticipant = Boolean(attendees.find((p) => Number(p.usuario_id) === Number(user?.id)))
 
   useEffect(() => {
     if (!id) return
@@ -53,6 +59,15 @@ export default function EventDetailPage() {
         const others = list.filter((p) => !['organizador', 'coorganizador'].includes(roleOf(p)))
         setOrganizer(org)
         setAttendees(others)
+
+        // determinar si el usuario actual es organizador o coorganizador
+        if (user?.id) {
+          const self = list.find((p) => Number(p.usuario_id) === Number(user.id));
+          const isCoorg = !!self && (self.rol || '').toLowerCase() === 'coorganizador';
+          const isOrg = !!org && Number(org.usuario_id) === Number(user.id);
+          setIsCoorganizer(isCoorg);
+          // isOrganizer ya depende de organizer variable + user
+        }
       })
       .catch(() => {
         setOrganizer(null)
@@ -102,6 +117,11 @@ export default function EventDetailPage() {
                     <i className="bi bi-person-circle" />
                     <span>{a.nombre} {a.apellido}</span>
                     <span className="text-slate-400">– {a.correo}</span>
+                    { (isOrganizer || isCoorganizer) && (
+                      <button className="ms-auto text-sm text-red-600 hover:underline" onClick={() => { setToDeleteUser(a); setShowDeleteModal(true); }}>
+                        Eliminar
+                      </button>
+                    )}
                   </li>
                 ))
               ) : (
@@ -157,10 +177,78 @@ export default function EventDetailPage() {
             </div>
           </div>
         )}
+        {!isOrganizer && isParticipant && (
+          <div className="card p-5 mt-5">
+            <h3 className="font-semibold">Participation</h3>
+            <div className="mt-3">
+              <Button variant="danger" onClick={() => setShowUnlinkModal(true)}><i className="bi bi-x-circle me-2" />Desvincularme</Button>
+            </div>
+          </div>
+        )}
       </aside>
       {isOrganizer && (
         <InviteUsersModal open={showInviteModal} onClose={() => setShowInviteModal(false)} />
       )}
+      {/* Confirmación desvinculación */}
+      <Modal open={showUnlinkModal} onClose={() => setShowUnlinkModal(false)} title="¿Estás seguro?">
+        <p className="text-sm text-slate-400">¿Estás seguro de desvincularte de este evento? Esta acción no se puede deshacer.</p>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setShowUnlinkModal(false)}>Cancelar</Button>
+          <Button variant="danger" onClick={async () => {
+            try {
+              if (!id || !user?.id) return;
+              await desvincularme(Number(id), Number(user.id));
+              toast.success('Te has desvinculado del evento correctamente');
+              // refrescar participantes y detalle
+              await getEventoDetalle(Number(id)).then((r) => setEvent((r.evento as any) ? {
+                id: (r.evento as any).evento_id,
+                name: (r.evento as any).titulo ?? 'Untitled Event',
+                date: (r.evento as any).fechaInicio ? new Date((r.evento as any).fechaInicio).toISOString() : new Date().toISOString(),
+                dateEnd: (r.evento as any).fechaFin ? new Date((r.evento as any).fechaFin).toISOString() : undefined,
+                capacity: typeof (r.evento as any).aforo === 'number' ? (r.evento as any).aforo : 0,
+                description: (r.evento as any).descripcion ?? undefined,
+                ownerId: '0',
+                privacy: ((r.evento as any).privacidad === 1 ? 'public' : 'private'),
+                status: 'published',
+                locationCity: (r.evento as any).ubicacion?.direccion ?? '',
+                guestsCount: typeof (r.evento as any).attendeesCount === 'number' ? (r.evento as any).attendeesCount : 0,
+                imageUrl: (r.evento as any).imagen ?? undefined,
+                category: undefined,
+                lat: typeof (r.evento as any).ubicacion?.latitud === 'number' ? (r.evento as any).ubicacion.latitud : undefined,
+                lng: typeof (r.evento as any).ubicacion?.longitud === 'number' ? (r.evento as any).ubicacion.longitud : undefined,
+              } : null)).catch(() => {});
+              await getParticipantesByEvento(Number(id)).then((r) => setAttendees(((r.participantes || []) as ParticipanteItem[]).filter((p) => !['organizador', 'coorganizador'].includes((p.rol || '').toLowerCase())))).catch(() => {});
+            } catch (err: any) {
+              console.error(err);
+              toast.error(err?.message || 'Error al desvincularte');
+            } finally {
+              setShowUnlinkModal(false);
+            }
+          }}>Desvincularme</Button>
+        </div>
+      </Modal>
+      {/* Confirmación Eliminar Invitado */}
+      <Modal open={showDeleteModal} onClose={() => { setShowDeleteModal(false); setToDeleteUser(null); }} title="¿Estás seguro de eliminar a este participante?">
+        <p className="text-sm text-slate-400">¿Estás seguro de eliminar a este participante? Esta acción no se puede deshacer.</p>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => { setShowDeleteModal(false); setToDeleteUser(null); }}>Cancelar</Button>
+          <Button variant="danger" onClick={async () => {
+            try {
+              if (!id || !toDeleteUser) return;
+              await eliminarInvitado(Number(id), Number(toDeleteUser.usuario_id));
+              toast.success('Participante eliminado correctamente');
+              // refrescar participantes
+              await getParticipantesByEvento(Number(id)).then((r) => setAttendees(((r.participantes || []) as ParticipanteItem[]).filter((p) => !['organizador', 'coorganizador'].includes((p.rol || '').toLowerCase())))).catch(() => {});
+            } catch (err: any) {
+              console.error(err);
+              toast.error(err?.message || 'Error al eliminar al participante');
+            } finally {
+              setShowDeleteModal(false);
+              setToDeleteUser(null);
+            }
+          }}>Eliminar</Button>
+        </div>
+      </Modal>
     </div>
   )
 }

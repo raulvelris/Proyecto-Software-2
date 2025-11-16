@@ -16,7 +16,7 @@ export const API_CONFIG = {
     INVITACIONES: {
       SEARCH: '/send-invitations/search',
       SEND: '/send-invitations/send',
-      RESPOND: '/send-invitations/respond',
+      RESPOND: '/invitaciones/respond',
       GET_NO_ELIGIBLE: '/send-invitations/no-eligible',
       COUNT: '/send-invitations/count'
     },
