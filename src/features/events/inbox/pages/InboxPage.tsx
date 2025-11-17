@@ -31,8 +31,8 @@ export default function InboxPage() {
       setLoading(true)
 
       const [invRes, notifRes] = await Promise.all([
-        getPrivateInvitations(Number(user.id)),
-        getNotificationActions(Number(user.id))
+        getPrivateInvitations(),
+        getNotificationActions()
       ])
 
       const onlyPendingInv = (invRes.invitaciones ?? [])
