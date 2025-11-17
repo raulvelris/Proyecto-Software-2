@@ -1,17 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Recurso, getRecursosByEvento } from '../services/ResourcesService';
+import { Recurso, getRecursosByEvento, eliminarRecurso } from '../services/ResourcesService';
 import { toast } from 'sonner';
 import { ResourceOpenButton } from './ResourceOpenButton';
+import Modal from '../../../../components/Modal';
+import { Button } from '../../../../components/Button';
 
 interface ResourcesSectionProps {
   eventoId: string;
-  isOrganizer: boolean;
+  canManageResources?: boolean;
   refreshTrigger?: number;
 }
 
-export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: ResourcesSectionProps) => {
+export const ResourcesSection = ({ eventoId, canManageResources = false, refreshTrigger }: ResourcesSectionProps) => {
   const [resources, setResources] = useState<Recurso[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [resourceToDelete, setResourceToDelete] = useState<Recurso | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   // Función para cargar recursos
   const loadResources = useCallback(async () => {
@@ -28,6 +33,28 @@ export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: Reso
       setIsLoading(false);
     }
   }, [eventoId]);
+
+  const closeDeleteModal = () => {
+    setShowConfirmDelete(false);
+    setResourceToDelete(null);
+  };
+
+  const handleDeleteResource = async () => {
+    if (!resourceToDelete?.id) return;
+    try {
+      setDeletingId(resourceToDelete.id);
+      await eliminarRecurso(eventoId, resourceToDelete.id);
+      toast.success('Recurso eliminado');
+      setResources(prev => prev.filter(r => r.id !== resourceToDelete.id));
+    } catch (error) {
+      console.error('Error al eliminar recurso:', error);
+      const message = error instanceof Error ? error.message : 'No se pudo eliminar el recurso';
+      toast.error(message);
+    } finally {
+      setDeletingId(null);
+      closeDeleteModal();
+    }
+  };
 
   // Cargar recursos al montar el componente, cuando cambie el evento o cuando cambie el trigger
   useEffect(() => {
@@ -74,14 +101,25 @@ export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: Reso
                       Tipo: {tipoRecurso}
                     </p>
                   </div>
-                  {isOrganizer && (
+                  {canManageResources && recurso.id && (
                     <button
-                      onClick={() => toast.info('Se implementará próximamente')}
+                      onClick={() => {
+                        if (deletingId !== null) return;
+                        setResourceToDelete(recurso);
+                        setShowConfirmDelete(true);
+                      }}
                       className="text-slate-400 hover:text-red-500 transition-colors ml-2"
                       title="Eliminar recurso"
-                      disabled={!recurso.id}
+                      disabled={deletingId === recurso.id}
                     >
-                      <i className="bi bi-trash"></i>
+                      {deletingId === recurso.id ? (
+                        <span className="inline-flex items-center gap-1 text-xs">
+                          <span className="animate-spin bi bi-arrow-repeat" />
+                          Eliminando
+                        </span>
+                      ) : (
+                        <i className="bi bi-trash" />
+                      )}
                     </button>
                   )}
                 </div>
@@ -97,6 +135,21 @@ export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: Reso
             );
           })}
         </div>
+      )}
+      {showConfirmDelete && resourceToDelete && (
+        <Modal open={showConfirmDelete} onClose={closeDeleteModal} title="Eliminar recurso">
+          <p className="text-sm text-slate-300">
+            ¿Seguro que deseas eliminar "{resourceToDelete.nombre}"? Esta acción no se puede deshacer.
+          </p>
+          <div className="mt-6 flex justify-end gap-3">
+            <Button variant="secondary" type="button" onClick={closeDeleteModal} disabled={deletingId === resourceToDelete.id}>
+              Cancelar
+            </Button>
+            <Button variant="danger" type="button" onClick={handleDeleteResource} disabled={deletingId === resourceToDelete.id}>
+              {deletingId === resourceToDelete.id ? 'Eliminando…' : 'Eliminar'}
+            </Button>
+          </div>
+        </Modal>
       )}
     </div>
   );

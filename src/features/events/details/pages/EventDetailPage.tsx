@@ -151,7 +151,7 @@ export default function EventDetailPage() {
         {canViewResources && (
           <ResourcesSection 
             eventoId={id || ''} 
-            isOrganizer={isOrganizer}
+            canManageResources={isOrganizer || isCoOrganizer}
             refreshTrigger={resourceAddedTrigger}
           />
         )}

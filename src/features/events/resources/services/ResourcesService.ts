@@ -66,6 +66,21 @@ export const createRecursoEnlace = async (
   }
 };
 
+export const eliminarRecurso = async (
+  eventoId: number | string,
+  recursoId: number,
+): Promise<{ success: boolean; message: string }> => {
+  const res = await fetch(
+    `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTOS.RECURSOS(eventoId)}/${recursoId}`,
+    {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    },
+  );
+
+  return handleApiResponse<{ success: boolean; message: string }>(res);
+};
+
 // Crear recurso de tipo ARCHIVO (FormData + multipart)
 export const createRecursoArchivo = async (
   eventoId: number,
