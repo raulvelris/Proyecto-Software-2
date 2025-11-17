@@ -5,6 +5,8 @@ import { Button } from '../../../../components/Button.tsx'
 import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
 import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
+import { deleteEvent } from '../../../../features/events/services/eventsService.ts'
+import { useNavigate } from 'react-router-dom'
 import { getCoordenadas } from '../../../../features/events/details/service/CoordinatesService.ts'
 import { AddResourceModal } from '../../resources/components/AddResourceModal'
 import { ResourcesSection } from '../../resources/components/ResourcesSection'
@@ -23,6 +25,7 @@ export default function EventDetailPage() {
   const [resourceAddedTrigger, setResourceAddedTrigger] = useState(0)
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
   const isOrganizer = Boolean(organizer && user?.id && Number(organizer.usuario_id) === Number(user.id))
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!id) return
@@ -76,6 +79,17 @@ export default function EventDetailPage() {
   }, [id])
 
   if (!event) return <p className="text-slate-400">Loading…</p>
+
+  async function handleDeleteEvent() {
+    if (!id) return
+    try {
+      await deleteEvent(id)
+      toast.success('Evento eliminado')
+      navigate('/events/managed') // o la ruta que quieras después de borrar
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudo eliminar el evento')
+    }
+  }
 
   return (
     <div className="grid lg:grid-cols-3 gap-6">
@@ -180,7 +194,7 @@ export default function EventDetailPage() {
               <Button variant="secondary" onClick={() => setShowInviteModal(true)}><i className="bi bi-envelope me-2" />Invite Attendees</Button>
               <Button variant="secondary" onClick={() => setShowAddResourceModal(true)}><i className="bi bi-plus-circle me-2" />Agregar recurso</Button>
               <Button variant="secondary" onClick={() => toast.info('Edit coming soon') }><i className="bi bi-pencil-square me-2" />Edit Event</Button>
-              <Button variant="danger" onClick={() => toast.info('Cancel functionality will be implemented later') }><i className="bi bi-x-circle me-2" />Cancel Event</Button>
+              <Button variant="danger" onClick={handleDeleteEvent}><i className="bi bi-x-circle me-2" />Cancel Event</Button>
             </div>
           </div>
         )}

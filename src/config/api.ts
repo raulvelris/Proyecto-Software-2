@@ -28,6 +28,7 @@ export const API_CONFIG = {
       ATTENDED: '/events/attended',
       MANAGED: '/events/managed',
       COORDINATES: '/event/coordinates',
+      DELETE: '/events/delete',
     },
     USUARIOS: {
       INVITACIONES: '/private-invitations',
