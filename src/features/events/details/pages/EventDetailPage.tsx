@@ -23,9 +23,14 @@ export default function EventDetailPage() {
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showAddResourceModal, setShowAddResourceModal] = useState(false)
   const [resourceAddedTrigger, setResourceAddedTrigger] = useState(0)
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
-  const isOrganizer = Boolean(organizer && user?.id && Number(organizer.usuario_id) === Number(user.id))
   const navigate = useNavigate()
+  const normalizedRole = (currentUserRole || '').toLowerCase()
+  const isOrganizer = normalizedRole === 'organizador'
+  const isCoOrganizer = normalizedRole === 'coorganizador'
+  const isAttendee = ['asistente', 'participante'].includes(normalizedRole)
+  const canViewResources = isOrganizer || isCoOrganizer || isAttendee
 
   useEffect(() => {
     if (!id) return
@@ -57,10 +62,13 @@ export default function EventDetailPage() {
         const others = list.filter((p) => !['organizador', 'coorganizador'].includes(roleOf(p)))
         setOrganizer(org) 
         setAttendees(others)
+        const currentParticipant = user?.id ? list.find(p => Number(p.usuario_id) === Number(user.id)) : null
+        setCurrentUserRole(currentParticipant ? roleOf(currentParticipant) : null)
       })
       .catch(() => {
         setOrganizer(null)
         setAttendees([])
+        setCurrentUserRole(null)
       })
     // Obtener coordenadas
     getCoordenadas(Number(id))
@@ -76,7 +84,7 @@ export default function EventDetailPage() {
         console.error('Error al obtener coordenadas:', err)
         setCoordinates(null)
       })
-  }, [id])
+  }, [id, user?.id])
 
   if (!event) return <p className="text-slate-400">Loading…</p>
 
@@ -114,7 +122,6 @@ export default function EventDetailPage() {
         </div>
 
         {isOrganizer && (
-          <>
           <div className="card p-5 mt-5">
             <h2 className="font-semibold mb-2">Asistentes</h2>
             <ul className="text-sm divide-y divide-white/5">
@@ -139,13 +146,14 @@ export default function EventDetailPage() {
               )}
             </ul>
           </div>
-          {/* Sección de Recursos */}
+        )}
+
+        {canViewResources && (
           <ResourcesSection 
             eventoId={id || ''} 
             isOrganizer={isOrganizer}
             refreshTrigger={resourceAddedTrigger}
           />
-        </>
         )}
       </div>
 

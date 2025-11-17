@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Recurso, getRecursosByEvento } from '../services/ResourcesService';
 import { toast } from 'sonner';
+import { ResourceOpenButton } from './ResourceOpenButton';
 
 interface ResourcesSectionProps {
   eventoId: string;
@@ -13,7 +14,7 @@ export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: Reso
   const [isLoading, setIsLoading] = useState(true);
 
   // Función para cargar recursos
-  const loadResources = async () => {
+  const loadResources = useCallback(async () => {
     try {
       setIsLoading(true);
       const recursos = await getRecursosByEvento(Number(eventoId));
@@ -26,12 +27,12 @@ export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: Reso
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [eventoId]);
 
   // Cargar recursos al montar el componente, cuando cambie el evento o cuando cambie el trigger
   useEffect(() => {
     loadResources();
-  }, [eventoId, refreshTrigger]);
+  }, [loadResources, refreshTrigger]);
 
   if (isLoading) {
     return <div className="text-slate-400">Cargando recursos...</div>;
@@ -61,7 +62,6 @@ export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: Reso
             const recursoId = recurso.id || Math.random().toString(36).substr(2, 9);
             const nombre = recurso.nombre || 'Recurso sin nombre';
             const tipoRecurso = recurso.tipo_recurso?.nombre || 'desconocido';
-            const esEnlace = tipoRecurso.toLowerCase() === 'enlace';
             
             return (
               <div key={recursoId} className="card p-4 relative group hover:bg-slate-800 transition-colors">
@@ -88,13 +88,7 @@ export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: Reso
                 
                 <div className="mt-3">
                   {recurso.url ? (
-                    <button
-                      onClick={() => toast.info('Se implementará próximamente')}
-                      className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
-                    >
-                      <i className={`bi ${esEnlace ? 'bi-box-arrow-up-right' : 'bi-download'} mr-1`}></i>
-                      {esEnlace ? 'Abrir enlace' : 'Descargar archivo'}
-                    </button>
+                    <ResourceOpenButton recurso={recurso} />
                   ) : (
                     <span className="text-slate-500 text-sm">Sin enlace disponible</span>
                   )}

@@ -3,9 +3,11 @@
 // Configuración de la API 
 const RAW_BASE = import.meta.env.VITE_API_URL; // 'http://localhost:5000'
 const BASE_WITH_API = RAW_BASE.endsWith('/api') ? RAW_BASE : `${RAW_BASE}/api`;
+const ASSETS_BASE_URL = BASE_WITH_API.replace(/\/api\/?$/, '');
 
 export const API_CONFIG = {
   BASE_URL: BASE_WITH_API,
+  ASSETS_BASE_URL,
   
   // Endpoints
   ENDPOINTS: {
