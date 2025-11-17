@@ -115,7 +115,7 @@ export default function EventDetailPage() {
         {isOrganizer && (
           <>
           <div className="card p-5 mt-5">
-            <h2 className="font-semibold mb-2">Asistentes</h2>
+            <h2 className="font-semibold mb-2">Participantes</h2>
             <ul className="text-sm divide-y divide-white/5">
               {organizer && (
                 <li className="py-2 flex items-center gap-2">
