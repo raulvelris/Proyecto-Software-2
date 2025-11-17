@@ -73,7 +73,11 @@ export default function InboxPage() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    if (user) {
+      load()
+    }
+  }, [user])
 
   async function onAccept(inv: PrivateInvitationItem) {
     const id = inv.invitacion_usuario_id
