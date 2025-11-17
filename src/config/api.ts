@@ -29,6 +29,7 @@ export const API_CONFIG = {
       MANAGED: '/events/managed',
       COORDINATES: '/event/coordinates',
       DELETE: '/events/delete',
+      EDIT: (eventoId: string | number) => `/eventos/${eventoId}`,
     },
     USUARIOS: {
       INVITACIONES: '/private-invitations',

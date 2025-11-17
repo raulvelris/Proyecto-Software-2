@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import InviteUsersModal from '../../invite/pages/InviteUsersModal'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from '../../../../components/Button.tsx'
 import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
 import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
 import { deleteEvent } from '../../../../features/events/services/eventsService.ts'
-import { useNavigate } from 'react-router-dom'
 import { getCoordenadas } from '../../../../features/events/details/service/CoordinatesService.ts'
 import { AddResourceModal } from '../../resources/components/AddResourceModal'
 import { ResourcesSection } from '../../resources/components/ResourcesSection'
@@ -15,6 +14,7 @@ import InteractiveMap from '../components/InteractiveMap'
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [event, setEvent] = useState<EventItem | null>(null)
   const [organizer, setOrganizer] = useState<ParticipanteItem | null>(null)
   const [attendees, setAttendees] = useState<ParticipanteItem[]>([])
@@ -25,7 +25,6 @@ export default function EventDetailPage() {
   const [resourceAddedTrigger, setResourceAddedTrigger] = useState(0)
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
   const isOrganizer = Boolean(organizer && user?.id && Number(organizer.usuario_id) === Number(user.id))
-  const navigate = useNavigate()
 
   useEffect(() => {
     if (!id) return
@@ -193,7 +192,7 @@ export default function EventDetailPage() {
             <div className="mt-3 grid grid-cols-1 gap-2">
               <Button variant="secondary" onClick={() => setShowInviteModal(true)}><i className="bi bi-envelope me-2" />Invite Attendees</Button>
               <Button variant="secondary" onClick={() => setShowAddResourceModal(true)}><i className="bi bi-plus-circle me-2" />Agregar recurso</Button>
-              <Button variant="secondary" onClick={() => toast.info('Edit coming soon') }><i className="bi bi-pencil-square me-2" />Edit Event</Button>
+              <Button variant="secondary" onClick={() => navigate(`/events/${id}/edit`)}><i className="bi bi-pencil-square me-2" />Edit Event</Button>
               <Button variant="danger" onClick={handleDeleteEvent}><i className="bi bi-x-circle me-2" />Cancel Event</Button>
             </div>
           </div>
