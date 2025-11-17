@@ -5,10 +5,12 @@ import { useAuthStore } from '../../../../store/authStore'
 import EventForm, { type EventFormValues } from '../../shared/components/EventForm'
 import { updateEvent } from '../../services/eventsService'
 import { getEventoDetalle } from '../../details/service/EventDetailService'
+import { getCoordenadas } from '../../details/service/CoordinatesService'
 
 export default function EditEventPage() {
   const { id } = useParams<{ id: string }>()
   const [event, setEvent] = useState<any>(null)
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const user = useAuthStore((s) => s.user)
@@ -21,6 +23,18 @@ export default function EditEventPage() {
         const response = await getEventoDetalle(Number(id))
         if (response.evento) {
           setEvent(response.evento)
+        }
+        // Cargar coordenadas por separado para precargar el formulario
+        try {
+          const coordsRes = await getCoordenadas(Number(id))
+          if (coordsRes?.success && coordsRes.coordenadas) {
+            const { latitud, longitud } = coordsRes.coordenadas
+            if (typeof latitud === 'number' && typeof longitud === 'number') {
+              setCoords({ lat: latitud, lng: longitud })
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching coordinates:', err)
         }
       } catch (error) {
         console.error('Error fetching event:', error)
@@ -80,8 +94,8 @@ export default function EditEventPage() {
     privacy: event.privacidad === 1 ? 'public' : 'private',
     locationAddress: event.ubicacion?.direccion || '',
     imageUrl: event.imagen || '',
-    lat: event.ubicacion?.latitud || 0,
-    lng: event.ubicacion?.longitud || 0,
+    lat: (coords?.lat ?? 0),
+    lng: (coords?.lng ?? 0),
   }
 
   return (
