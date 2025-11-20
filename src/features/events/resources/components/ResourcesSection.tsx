@@ -137,7 +137,12 @@ export const ResourcesSection = ({ eventoId, canManageResources = false, refresh
         </div>
       )}
       {showConfirmDelete && resourceToDelete && (
-        <Modal open={showConfirmDelete} onClose={closeDeleteModal} title="Eliminar recurso">
+        <Modal
+          open={showConfirmDelete}
+          onClose={closeDeleteModal}
+          title="Eliminar recurso"
+          hideDefaultCloseButton
+        >
           <p className="text-sm text-slate-300">
             ¿Seguro que deseas eliminar "{resourceToDelete.nombre}"? Esta acción no se puede deshacer.
           </p>
