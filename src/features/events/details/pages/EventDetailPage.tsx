@@ -16,15 +16,30 @@ export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [event, setEvent] = useState<EventItem | null>(null)
+
   const [organizer, setOrganizer] = useState<ParticipanteItem | null>(null)
+  const [coorganizers, setCoorganizers] = useState<ParticipanteItem[]>([])
   const [attendees, setAttendees] = useState<ParticipanteItem[]>([])
+
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
+
   const user = useAuthStore((s) => s.user)
+
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showAddResourceModal, setShowAddResourceModal] = useState(false)
   const [resourceAddedTrigger, setResourceAddedTrigger] = useState(0)
+
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
-  const isOrganizer = Boolean(organizer && user?.id && Number(organizer.usuario_id) === Number(user.id))
+
+  const userId = Number(user?.id)
+
+  const isOrganizer = organizer?.usuario_id === userId
+  const isCoorganizer = coorganizers.some(c => Number(c.usuario_id) === userId)
+  const isAttendee = attendees.some(a => Number(a.usuario_id) === userId)
+
+  const isRoleAllowed = isOrganizer || isCoorganizer || isAttendee
+  const canManageEvent = isOrganizer || isCoorganizer
+  const canCancelEvent = isOrganizer
 
   useEffect(() => {
     if (!id) return
@@ -46,19 +61,19 @@ export default function EventDetailPage() {
         setEvent(mapped)
       })
       .catch(() => setEvent(null))
-    // Obtener participantes (organizador + asistentes)
+    // Obtener participantes (organizador + coorganizadores + asistentes)
     getParticipantesByEvento(Number(id))
       .then((r) => {
         const list = (r.participantes || []) as ParticipanteItem[]
         const roleOf = (p: ParticipanteItem) => (p.rol || '').toLowerCase()
-        const org = list.find((p) => roleOf(p) === 'organizador') || null
-        // asistentes reales: excluir organizadores y coorganizadores
-        const others = list.filter((p) => !['organizador', 'coorganizador'].includes(roleOf(p)))
-        setOrganizer(org) 
-        setAttendees(others)
+
+        setOrganizer(list.find(p => roleOf(p) === 'organizador') || null)
+        setCoorganizers(list.filter(p => roleOf(p) === 'coorganizador'))
+        setAttendees(list.filter(p => roleOf(p) === 'asistente'))
       })
       .catch(() => {
         setOrganizer(null)
+        setCoorganizers([])
         setAttendees([])
       })
     // Obtener coordenadas
@@ -79,14 +94,14 @@ export default function EventDetailPage() {
 
   if (!event) return <p className="text-slate-400">Loading…</p>
 
-  async function handleDeleteEvent() {
+  async function handleCancelEvent() {
     if (!id) return
     try {
       await deleteEvent(id)
-      toast.success('Evento eliminado')
+      toast.success('Evento cancelado')
       navigate('/events/managed') // o la ruta que quieras después de borrar
     } catch (e: any) {
-      toast.error(e?.message || 'No se pudo eliminar el evento')
+      toast.error(e?.message)
     }
   }
 
@@ -112,8 +127,8 @@ export default function EventDetailPage() {
           <p className="text-slate-300">{event.description || 'No description provided.'}</p>
         </div>
 
-        {isOrganizer && (
-          <>
+        {/* Ver participantes: solo organizador + coorganizador */}
+        {canManageEvent && (
           <div className="card p-5 mt-5">
             <h2 className="font-semibold mb-2">Participantes</h2>
             <ul className="text-sm divide-y divide-white/5">
@@ -122,9 +137,12 @@ export default function EventDetailPage() {
                   <i className="bi bi-person-badge" />
                   <span className="font-medium">{organizer.nombre} {organizer.apellido}</span>
                   <span className="text-slate-400">– {organizer.correo}</span>
-                  <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">Organizador</span>
+                  <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">
+                    Organizador
+                  </span>
                 </li>
               )}
+
               {attendees.length ? (
                 attendees.map((a) => (
                   <li key={a.participante_id} className="py-2 flex items-center gap-2">
@@ -138,13 +156,15 @@ export default function EventDetailPage() {
               )}
             </ul>
           </div>
-          {/* Sección de Recursos */}
-          <ResourcesSection 
-            eventoId={id || ''} 
-            isOrganizer={isOrganizer}
+        )}
+
+        {/* Recursos: todos los roles válidos */}
+        {isRoleAllowed && (
+          <ResourcesSection
+            eventoId={id || ''}
+            canSeeResources={true}
             refreshTrigger={resourceAddedTrigger}
           />
-        </>
         )}
       </div>
 
@@ -186,23 +206,40 @@ export default function EventDetailPage() {
           )}
         </div>
 
-        {isOrganizer && (
+        {canManageEvent && (
           <div className="card p-5">
             <h3 className="font-semibold">Organizer Tools</h3>
             <div className="mt-3 grid grid-cols-1 gap-2">
-              <Button variant="secondary" onClick={() => setShowInviteModal(true)}><i className="bi bi-envelope me-2" />Invite Attendees</Button>
-              <Button variant="secondary" onClick={() => setShowAddResourceModal(true)}><i className="bi bi-plus-circle me-2" />Agregar recurso</Button>
-              <Button variant="secondary" onClick={() => navigate(`/events/${id}/edit`)}><i className="bi bi-pencil-square me-2" />Edit Event</Button>
-              <Button variant="danger" onClick={handleDeleteEvent}><i className="bi bi-x-circle me-2" />Cancel Event</Button>
+              <Button variant="secondary" onClick={() => setShowInviteModal(true)}>
+                <i className="bi bi-envelope me-2" />Invite Attendees
+              </Button>
+              <Button variant="secondary" onClick={() => setShowAddResourceModal(true)}>
+                <i className="bi bi-plus-circle me-2" />Agregar recurso
+              </Button>
+              <Button variant="secondary" onClick={() => navigate(`/events/${id}/edit`)}>
+                <i className="bi bi-pencil-square me-2" />Edit Event
+              </Button>
+              {canCancelEvent && (
+                <Button variant="danger" onClick={handleCancelEvent}>
+                  <i className="bi bi-x-circle me-2" />Cancel Event
+                </Button>
+              )}
             </div>
           </div>
         )}
       </aside>
-      {isOrganizer && (
+      {canManageEvent && (
         <>
-          <InviteUsersModal open={showInviteModal} onClose={() => setShowInviteModal(false)} />
-          <AddResourceModal open={showAddResourceModal} onClose={() => setShowAddResourceModal(false)} 
-            eventoId={id || ''} onResourceAdded={() => setResourceAddedTrigger(prev => prev + 1)} />
+          <InviteUsersModal 
+            open={showInviteModal} 
+            onClose={() => setShowInviteModal(false)} 
+          />
+          <AddResourceModal 
+            open={showAddResourceModal} 
+            onClose={() => setShowAddResourceModal(false)} 
+            eventoId={id || ''} 
+            onResourceAdded={() => setResourceAddedTrigger(prev => prev + 1)} 
+          />
         </>
       )}
     </div>

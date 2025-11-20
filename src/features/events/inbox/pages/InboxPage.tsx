@@ -108,7 +108,7 @@ export default function InboxPage() {
   function onViewDetail(inv: PrivateInvitationItem) {
     const eventId = inv.evento?.evento_id
     if (eventId == null) return
-    navigate(`/eventos/${eventId}`)
+    navigate(`/events/${eventId}`)
   }
 
   if (loading) return <div className="text-sm text-slate-500">Cargando...</div>

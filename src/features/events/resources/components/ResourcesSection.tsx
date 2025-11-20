@@ -4,11 +4,11 @@ import { toast } from 'sonner';
 
 interface ResourcesSectionProps {
   eventoId: string;
-  isOrganizer: boolean;
+  canSeeResources: boolean;
   refreshTrigger?: number;
 }
 
-export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: ResourcesSectionProps) => {
+export const ResourcesSection = ({ eventoId, canSeeResources, refreshTrigger }: ResourcesSectionProps) => {
   const [resources, setResources] = useState<Recurso[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -74,7 +74,7 @@ export const ResourcesSection = ({ eventoId, isOrganizer, refreshTrigger }: Reso
                       Tipo: {tipoRecurso}
                     </p>
                   </div>
-                  {isOrganizer && (
+                  {canSeeResources && (
                     <button
                       onClick={() => toast.info('Se implementará próximamente')}
                       className="text-slate-400 hover:text-red-500 transition-colors ml-2"
