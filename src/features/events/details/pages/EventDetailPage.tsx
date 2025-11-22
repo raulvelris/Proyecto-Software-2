@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import InviteUsersModal from '../../invite/pages/InviteUsersModal'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from '../../../../components/Button.tsx'
+import { ConfirmationModal } from '../../../../components/modals/ConfirmationModal' //
 import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
 import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
@@ -27,6 +28,8 @@ export default function EventDetailPage() {
 
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showAddResourceModal, setShowAddResourceModal] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false) //
+  const [isCanceling, setIsCanceling] = useState(false) //
   const [resourceAddedTrigger, setResourceAddedTrigger] = useState(0)
 
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
@@ -94,14 +97,22 @@ export default function EventDetailPage() {
 
   if (!event) return <p className="text-slate-400">Loading…</p>
 
-  async function handleCancelEvent() {
+  const handleCancelClick = () => {
+    setShowCancelConfirm(true)
+  }
+
+  const handleCancelEvent = async () => {
     if (!id) return
+    setIsCanceling(true)
     try {
       await deleteEvent(id)
       toast.success('Evento cancelado')
-      navigate('/events/managed') // o la ruta que quieras después de borrar
+      navigate('/events/managed')
     } catch (e: any) {
-      toast.error(e?.message)
+      toast.error(e?.message || 'Error al cancelar el evento')
+    } finally {
+      setIsCanceling(false)
+      setShowCancelConfirm(false)
     }
   }
 
@@ -220,9 +231,14 @@ export default function EventDetailPage() {
                 <i className="bi bi-pencil-square me-2" />Edit Event
               </Button>
               {canCancelEvent && (
-                <Button variant="danger" onClick={handleCancelEvent}>
-                  <i className="bi bi-x-circle me-2" />Cancel Event
-                </Button>
+                <Button 
+                  variant="danger" 
+                  onClick={handleCancelClick}
+                  disabled={isCanceling}
+                >
+                  <i className="bi bi-x-circle me-2" />
+                  {isCanceling ? 'Cancelando...' : 'Cancelar Evento'}
+                </Button>
               )}
             </div>
           </div>
@@ -239,6 +255,16 @@ export default function EventDetailPage() {
             onClose={() => setShowAddResourceModal(false)} 
             eventoId={id || ''} 
             onResourceAdded={() => setResourceAddedTrigger(prev => prev + 1)} 
+          />
+          <ConfirmationModal
+            isOpen={showCancelConfirm}
+            onClose={() => !isCanceling && setShowCancelConfirm(false)}
+            onConfirm={handleCancelEvent}
+            title="¿Estás seguro de cancelar el evento?"
+            message="Esta acción no se puede deshacer. Los asistentes serán notificados de la cancelación."
+            confirmText="Sí, cancelar evento"
+            cancelText="No, mantener el evento"
+            isProcessing={isCanceling}
           />
         </>
       )}
