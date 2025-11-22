@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Recurso, getRecursosByEvento } from '../services/ResourcesService';
+import { useState, useEffect, useCallback } from 'react';
+import { Recurso, getRecursosByEvento, eliminarRecurso } from '../services/ResourcesService';
 import { toast } from 'sonner';
+import { ResourceOpenButton } from './ResourceOpenButton';
+import Modal from '../../../../components/Modal';
+import { Button } from '../../../../components/Button';
 
 interface ResourcesSectionProps {
   eventoId: string;
@@ -11,9 +14,12 @@ interface ResourcesSectionProps {
 export const ResourcesSection = ({ eventoId, canSeeResources, refreshTrigger }: ResourcesSectionProps) => {
   const [resources, setResources] = useState<Recurso[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [resourceToDelete, setResourceToDelete] = useState<Recurso | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   // Función para cargar recursos
-  const loadResources = async () => {
+  const loadResources = useCallback(async () => {
     try {
       setIsLoading(true);
       const recursos = await getRecursosByEvento(Number(eventoId));
@@ -26,12 +32,34 @@ export const ResourcesSection = ({ eventoId, canSeeResources, refreshTrigger }: 
     } finally {
       setIsLoading(false);
     }
+  }, [eventoId]);
+
+  const closeDeleteModal = () => {
+    setShowConfirmDelete(false);
+    setResourceToDelete(null);
+  };
+
+  const handleDeleteResource = async () => {
+    if (!resourceToDelete?.id) return;
+    try {
+      setDeletingId(resourceToDelete.id);
+      await eliminarRecurso(eventoId, resourceToDelete.id);
+      toast.success('Recurso eliminado');
+      setResources(prev => prev.filter(r => r.id !== resourceToDelete.id));
+    } catch (error) {
+      console.error('Error al eliminar recurso:', error);
+      const message = error instanceof Error ? error.message : 'No se pudo eliminar el recurso';
+      toast.error(message);
+    } finally {
+      setDeletingId(null);
+      closeDeleteModal();
+    }
   };
 
   // Cargar recursos al montar el componente, cuando cambie el evento o cuando cambie el trigger
   useEffect(() => {
     loadResources();
-  }, [eventoId, refreshTrigger]);
+  }, [loadResources, refreshTrigger]);
 
   if (isLoading) {
     return <div className="text-slate-400">Cargando recursos...</div>;
@@ -61,7 +89,6 @@ export const ResourcesSection = ({ eventoId, canSeeResources, refreshTrigger }: 
             const recursoId = recurso.id || Math.random().toString(36).substr(2, 9);
             const nombre = recurso.nombre || 'Recurso sin nombre';
             const tipoRecurso = recurso.tipo_recurso?.nombre || 'desconocido';
-            const esEnlace = tipoRecurso.toLowerCase() === 'enlace';
             
             return (
               <div key={recursoId} className="card p-4 relative group hover:bg-slate-800 transition-colors">
@@ -74,27 +101,32 @@ export const ResourcesSection = ({ eventoId, canSeeResources, refreshTrigger }: 
                       Tipo: {tipoRecurso}
                     </p>
                   </div>
-                  {canSeeResources && (
+                  {canSeeResources && recurso.id && (
                     <button
-                      onClick={() => toast.info('Se implementará próximamente')}
+                      onClick={() => {
+                        if (deletingId !== null) return;
+                        setResourceToDelete(recurso);
+                        setShowConfirmDelete(true);
+                      }}
                       className="text-slate-400 hover:text-red-500 transition-colors ml-2"
                       title="Eliminar recurso"
-                      disabled={!recurso.id}
+                      disabled={deletingId === recurso.id}
                     >
-                      <i className="bi bi-trash"></i>
+                      {deletingId === recurso.id ? (
+                        <span className="inline-flex items-center gap-1 text-xs">
+                          <span className="animate-spin bi bi-arrow-repeat" />
+                          Eliminando
+                        </span>
+                      ) : (
+                        <i className="bi bi-trash" />
+                      )}
                     </button>
                   )}
                 </div>
                 
                 <div className="mt-3">
                   {recurso.url ? (
-                    <button
-                      onClick={() => toast.info('Se implementará próximamente')}
-                      className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
-                    >
-                      <i className={`bi ${esEnlace ? 'bi-box-arrow-up-right' : 'bi-download'} mr-1`}></i>
-                      {esEnlace ? 'Abrir enlace' : 'Descargar archivo'}
-                    </button>
+                    <ResourceOpenButton recurso={recurso} />
                   ) : (
                     <span className="text-slate-500 text-sm">Sin enlace disponible</span>
                   )}
@@ -103,6 +135,26 @@ export const ResourcesSection = ({ eventoId, canSeeResources, refreshTrigger }: 
             );
           })}
         </div>
+      )}
+      {showConfirmDelete && resourceToDelete && (
+        <Modal
+          open={showConfirmDelete}
+          onClose={closeDeleteModal}
+          title="Eliminar recurso"
+          hideDefaultCloseButton
+        >
+          <p className="text-sm text-slate-300">
+            ¿Seguro que deseas eliminar "{resourceToDelete.nombre}"? Esta acción no se puede deshacer.
+          </p>
+          <div className="mt-6 flex justify-end gap-3">
+            <Button variant="secondary" type="button" onClick={closeDeleteModal} disabled={deletingId === resourceToDelete.id}>
+              Cancelar
+            </Button>
+            <Button variant="danger" type="button" onClick={handleDeleteResource} disabled={deletingId === resourceToDelete.id}>
+              {deletingId === resourceToDelete.id ? 'Eliminando…' : 'Eliminar'}
+            </Button>
+          </div>
+        </Modal>
       )}
     </div>
   );
