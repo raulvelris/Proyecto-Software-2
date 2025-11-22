@@ -16,6 +16,7 @@ import EventDetailPage from '../features/events/details/pages/EventDetailPage'
 import PublicEventsPage from '../features/events/public/pages/PublicEventsPage'
 import InboxPage from '../features/events/inbox/pages/InboxPage'
 import AttendedEventsPage from '../features/events/attended/pages/AttendedEventsPage'
+import EditEventPage from '../features/events/edit/pages/EditEventPage'
 
 import { PrivateRoute } from './privateRoute'
 
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: '/events/public', element: <PublicEventsPage /> },
       { path: '/events/:id', element: <EventDetailPage /> },
       { path: '/events/create', element: <CreateEventPage /> },
+      { path: '/events/:id/edit', element: <EditEventPage /> },
       { path: '/events/managed', element: <ManagedEventsPage /> },
       { path: '/notifications', element: <InboxPage /> },
       { path: '/attended', element: <AttendedEventsPage /> },

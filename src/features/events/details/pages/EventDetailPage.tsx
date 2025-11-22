@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import InviteUsersModal from '../../invite/pages/InviteUsersModal'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from '../../../../components/Button.tsx'
+import Modal from '../../../../components/Modal'
+import { ConfirmationModal } from '../../../../components/modals/ConfirmationModal' //
 import { useAuthStore } from '../../../../store/authStore.ts'
 import { toast } from 'sonner'
-import { getEventoDetalle, getParticipantesByEvento, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
+import { getEventoDetalle, getParticipantesByEvento, desvincularme, eliminarInvitado, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
 import { deleteEvent } from '../../../../features/events/services/eventsService.ts'
-import { useNavigate } from 'react-router-dom'
 import { getCoordenadas } from '../../../../features/events/details/service/CoordinatesService.ts'
 import { AddResourceModal } from '../../resources/components/AddResourceModal'
 import { ResourcesSection } from '../../resources/components/ResourcesSection'
@@ -15,23 +16,37 @@ import InteractiveMap from '../components/InteractiveMap'
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [event, setEvent] = useState<EventItem | null>(null)
+
   const [organizer, setOrganizer] = useState<ParticipanteItem | null>(null)
+  const [coorganizers, setCoorganizers] = useState<ParticipanteItem[]>([])
   const [attendees, setAttendees] = useState<ParticipanteItem[]>([])
-  const [coOrganizers, setCoOrganizers] = useState<ParticipanteItem[]>([])
+
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
+
   const user = useAuthStore((s) => s.user)
+
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showAddResourceModal, setShowAddResourceModal] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false) //
+  const [isCanceling, setIsCanceling] = useState(false) //
   const [resourceAddedTrigger, setResourceAddedTrigger] = useState(0)
-  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [toDeleteUser, setToDeleteUser] = useState<ParticipanteItem | null>(null)
+
   const apiKey = "AIzaSyA8vLnFywOEzRuXRFdfID5EW4dMIjaXoO8"
-  const navigate = useNavigate()
-  const normalizedRole = (currentUserRole || '').toLowerCase()
-  const isOrganizer = normalizedRole === 'organizador'
-  const isCoOrganizer = normalizedRole === 'coorganizador'
-  const isAttendee = ['asistente', 'participante'].includes(normalizedRole)
-  const canViewResources = isOrganizer || isCoOrganizer || isAttendee
+
+  const userId = Number(user?.id)
+
+  const isOrganizer = organizer?.usuario_id === userId
+  const isCoorganizer = coorganizers.some(c => Number(c.usuario_id) === userId)
+  const isAttendee = attendees.some(a => Number(a.usuario_id) === userId)
+
+  const isRoleAllowed = isOrganizer || isCoorganizer || isAttendee
+  const canManageEvent = isOrganizer || isCoorganizer
+  const canCancelEvent = isOrganizer
 
   useEffect(() => {
     if (!id) return
@@ -53,26 +68,20 @@ export default function EventDetailPage() {
         setEvent(mapped)
       })
       .catch(() => setEvent(null))
-    // Obtener participantes (organizador + asistentes)
+    // Obtener participantes (organizador + coorganizadores + asistentes)
     getParticipantesByEvento(Number(id))
       .then((r) => {
         const list = (r.participantes || []) as ParticipanteItem[]
         const roleOf = (p: ParticipanteItem) => (p.rol || '').toLowerCase()
-        const org = list.find((p) => roleOf(p) === 'organizador') || null
-        const coorgs = list.filter((p) => roleOf(p) === 'coorganizador')
-        // asistentes reales: excluir organizadores y coorganizadores
-        const others = list.filter((p) => !['organizador', 'coorganizador'].includes(roleOf(p)))
-        setOrganizer(org) 
-        setCoOrganizers(coorgs)
-        setAttendees(others)
-        const currentParticipant = user?.id ? list.find(p => Number(p.usuario_id) === Number(user.id)) : null
-        setCurrentUserRole(currentParticipant ? roleOf(currentParticipant) : null)
+
+        setOrganizer(list.find(p => roleOf(p) === 'organizador') || null)
+        setCoorganizers(list.filter(p => roleOf(p) === 'coorganizador'))
+        setAttendees(list.filter(p => roleOf(p) === 'asistente'))
       })
       .catch(() => {
         setOrganizer(null)
-        setCoOrganizers([])
+        setCoorganizers([])
         setAttendees([])
-        setCurrentUserRole(null)
       })
     // Obtener coordenadas
     getCoordenadas(Number(id))
@@ -88,18 +97,26 @@ export default function EventDetailPage() {
         console.error('Error al obtener coordenadas:', err)
         setCoordinates(null)
       })
-  }, [id, user?.id])
+  }, [id])
 
   if (!event) return <p className="text-slate-400">Loading…</p>
 
-  async function handleDeleteEvent() {
+  const handleCancelClick = () => {
+    setShowCancelConfirm(true)
+  }
+
+  const handleCancelEvent = async () => {
     if (!id) return
+    setIsCanceling(true)
     try {
       await deleteEvent(id)
-      toast.success('Evento eliminado')
-      navigate('/events/managed') // o la ruta que quieras después de borrar
+      toast.success('Evento cancelado')
+      navigate('/events/managed')
     } catch (e: any) {
-      toast.error(e?.message || 'No se pudo eliminar el evento')
+      toast.error(e?.message || 'Error al cancelar el evento')
+    } finally {
+      setIsCanceling(false)
+      setShowCancelConfirm(false)
     }
   }
 
@@ -125,63 +142,53 @@ export default function EventDetailPage() {
           <p className="text-slate-300">{event.description || 'No description provided.'}</p>
         </div>
 
-        {isOrganizer && (
-          <div className="card p-5 mt-5 space-y-4">
-            <h2 className="font-semibold">Participantes</h2>
-
-            {organizer && (
-              <section>
-                <h3 className="text-xs uppercase tracking-wide text-slate-400 mb-2">Organizador</h3>
-                <ul className="text-sm divide-y divide-white/5">
-                  <li className="py-2 flex items-center gap-2">
-                    <i className="bi bi-person-badge" />
-                    <span className="font-medium">{organizer.nombre} {organizer.apellido}</span>
-                    <span className="text-slate-400">– {organizer.correo}</span>
-                    <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">Organizador</span>
-                  </li>
-                </ul>
-              </section>
-            )}
-
-            {coOrganizers.length > 0 && (
-              <section>
-                <h3 className="text-xs uppercase tracking-wide text-slate-400 mb-2">Coorganizadores</h3>
-                <ul className="text-sm divide-y divide-white/5">
-                  {coOrganizers.map((coorg) => (
-                    <li key={coorg.participante_id} className="py-2 flex items-center gap-2">
-                      <i className="bi bi-people" />
-                      <span className="font-medium">{coorg.nombre} {coorg.apellido}</span>
-                      <span className="text-slate-400">– {coorg.correo}</span>
-                      <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">Coorganizador</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            <section>
-              <h3 className="text-xs uppercase tracking-wide text-slate-400 mb-2">Asistentes</h3>
-              {attendees.length ? (
-                <ul className="text-sm divide-y divide-white/5">
-                  {attendees.map((a) => (
-                    <li key={a.participante_id} className="py-2 flex items-center gap-2">
-                      <i className="bi bi-person-circle" />
-                      <span>{a.nombre} {a.apellido}</span>
-                      <span className="text-slate-400">– {a.correo}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-slate-400">No hay asistentes aún.</p>
+        {/* Ver participantes: solo organizador + coorganizador */}
+        {canManageEvent && (
+          <div className="card p-5 mt-5">
+            <h2 className="font-semibold mb-2">Participantes</h2>
+            <ul className="text-sm divide-y divide-white/5">
+              {organizer && (
+                <li className="py-2 flex items-center gap-2">
+                  <i className="bi bi-person-badge" />
+                  <span className="font-medium">{organizer.nombre} {organizer.apellido}</span>
+                  <span className="text-slate-400">– {organizer.correo}</span>
+                  <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">
+                    Organizador
+                  </span>
+                </li>
               )}
-            </section>
+
+              {attendees.length ? (
+                attendees.map((a) => (
+                  <li key={a.participante_id} className="py-2 flex items-center gap-2">
+                    <i className="bi bi-person-circle" />
+                    <span>{a.nombre} {a.apellido}</span>
+                    <span className="text-slate-400">– {a.correo}</span>
+                    {canManageEvent && (
+                      <button
+                        className="ms-auto text-sm text-red-600 hover:underline"
+                        onClick={() => {
+                          setToDeleteUser(a)
+                          setShowDeleteModal(true)
+                        }}
+                      >
+                        Eliminar
+                      </button>
+                    )}
+                  </li>
+                ))
+              ) : (
+                <li className="py-2 text-slate-400 text-sm">No hay asistentes aún.</li>
+              )}
+            </ul>
           </div>
         )}
 
-        {canViewResources && (
-          <ResourcesSection 
-            eventoId={id || ''} 
-            canManageResources={isOrganizer || isCoOrganizer}
+        {/* Recursos: todos los roles válidos */}
+        {isRoleAllowed && (
+          <ResourcesSection
+            eventoId={id || ''}
+            canSeeResources={true}
             refreshTrigger={resourceAddedTrigger}
           />
         )}
@@ -225,25 +232,172 @@ export default function EventDetailPage() {
           )}
         </div>
 
-        {isOrganizer && (
+        {canManageEvent && (
           <div className="card p-5">
             <h3 className="font-semibold">Organizer Tools</h3>
             <div className="mt-3 grid grid-cols-1 gap-2">
-              <Button variant="secondary" onClick={() => setShowInviteModal(true)}><i className="bi bi-envelope me-2" />Invite Attendees</Button>
-              <Button variant="secondary" onClick={() => setShowAddResourceModal(true)}><i className="bi bi-plus-circle me-2" />Agregar recurso</Button>
-              <Button variant="secondary" onClick={() => toast.info('Edit coming soon') }><i className="bi bi-pencil-square me-2" />Edit Event</Button>
-              <Button variant="danger" onClick={handleDeleteEvent}><i className="bi bi-x-circle me-2" />Cancel Event</Button>
+              <Button variant="secondary" onClick={() => setShowInviteModal(true)}>
+                <i className="bi bi-envelope me-2" />Invite Attendees
+              </Button>
+              <Button variant="secondary" onClick={() => setShowAddResourceModal(true)}>
+                <i className="bi bi-plus-circle me-2" />Agregar recurso
+              </Button>
+              <Button variant="secondary" onClick={() => navigate(`/events/${id}/edit`)}>
+                <i className="bi bi-pencil-square me-2" />Edit Event
+              </Button>
+              {canCancelEvent && (
+                <Button 
+                  variant="danger" 
+                  onClick={handleCancelClick}
+                  disabled={isCanceling}
+                >
+                  <i className="bi bi-x-circle me-2" />
+                  {isCanceling ? 'Cancelando...' : 'Cancelar Evento'}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+        {!isOrganizer && isAttendee && (
+          <div className="card p-5 mt-5">
+            <h3 className="font-semibold">Participation</h3>
+            <div className="mt-3">
+              <Button variant="danger" onClick={() => setShowUnlinkModal(true)}>
+                <i className="bi bi-x-circle me-2" />Desvincularme
+              </Button>
             </div>
           </div>
         )}
       </aside>
-      {isOrganizer && (
+      {canManageEvent && (
         <>
-          <InviteUsersModal open={showInviteModal} onClose={() => setShowInviteModal(false)} />
-          <AddResourceModal open={showAddResourceModal} onClose={() => setShowAddResourceModal(false)} 
-            eventoId={id || ''} onResourceAdded={() => setResourceAddedTrigger(prev => prev + 1)} />
+          <InviteUsersModal 
+            open={showInviteModal} 
+            onClose={() => setShowInviteModal(false)} 
+          />
+          <AddResourceModal 
+            open={showAddResourceModal} 
+            onClose={() => setShowAddResourceModal(false)} 
+            eventoId={id || ''} 
+            onResourceAdded={() => setResourceAddedTrigger(prev => prev + 1)} 
+          />
+          <ConfirmationModal
+            isOpen={showCancelConfirm}
+            onClose={() => !isCanceling && setShowCancelConfirm(false)}
+            onConfirm={handleCancelEvent}
+            title="¿Estás seguro de cancelar el evento?"
+            message="Esta acción no se puede deshacer. Los asistentes serán notificados de la cancelación."
+            confirmText="Sí, cancelar evento"
+            cancelText="No, mantener el evento"
+            isProcessing={isCanceling}
+          />
         </>
       )}
+      <Modal
+        open={showUnlinkModal}
+        onClose={() => setShowUnlinkModal(false)}
+        title="¿Estás seguro?"
+      >
+        <p className="text-sm text-slate-400">
+          ¿Estás seguro de desvincularte de este evento? Esta acción no se puede deshacer.
+        </p>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setShowUnlinkModal(false)}>Cancelar</Button>
+          <Button
+            variant="danger"
+            onClick={async () => {
+              try {
+                if (!id || !user?.id) return
+                await desvincularme(Number(id), Number(user.id))
+                toast.success('Te has desvinculado del evento correctamente')
+                await getEventoDetalle(Number(id))
+                  .then((r) => {
+                    const ev = r.evento as any
+                    const mapped: EventItem = {
+                      name: ev.titulo ?? 'Untitled Event',
+                      dateStart: ev.fechaInicio ? new Date(ev.fechaInicio).toISOString() : undefined,
+                      dateEnd: ev.fechaFin ? new Date(ev.fechaFin).toISOString() : undefined,
+                      capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
+                      description: ev.descripcion ?? undefined,
+                      privacy: (ev.privacidad === 1 ? 'public' : 'private'),
+                      locationCity: ev.ubicacion?.direccion ?? '',
+                      guestsCount: typeof ev.attendeesCount === 'number' ? ev.attendeesCount : 0,
+                      imageUrl: ev.imagen ?? undefined,
+                    }
+                    setEvent(mapped)
+                  })
+                  .catch(() => {})
+                await getParticipantesByEvento(Number(id))
+                  .then((r) => {
+                    const list = (r.participantes || []) as ParticipanteItem[]
+                    const roleOf = (p: ParticipanteItem) => (p.rol || '').toLowerCase()
+                    setOrganizer(list.find(p => roleOf(p) === 'organizador') || null)
+                    setCoorganizers(list.filter(p => roleOf(p) === 'coorganizador'))
+                    setAttendees(list.filter(p => roleOf(p) === 'asistente'))
+                  })
+                  .catch(() => {})
+              } catch (err: any) {
+                console.error(err)
+                toast.error(err?.message || 'Error al desvincularte')
+              } finally {
+                setShowUnlinkModal(false)
+              }
+            }}
+          >
+            Desvincularme
+          </Button>
+        </div>
+      </Modal>
+      <Modal
+        open={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setToDeleteUser(null)
+        }}
+        title="¿Estás seguro de eliminar a este participante?"
+      >
+        <p className="text-sm text-slate-400">
+          ¿Estás seguro de eliminar a este participante? Esta acción no se puede deshacer.
+        </p>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setShowDeleteModal(false)
+              setToDeleteUser(null)
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="danger"
+            onClick={async () => {
+              try {
+                if (!id || !toDeleteUser) return
+                await eliminarInvitado(Number(id), Number(toDeleteUser.usuario_id))
+                toast.success('Participante eliminado correctamente')
+                await getParticipantesByEvento(Number(id))
+                  .then((r) => {
+                    const list = (r.participantes || []) as ParticipanteItem[]
+                    const roleOf = (p: ParticipanteItem) => (p.rol || '').toLowerCase()
+                    setOrganizer(list.find(p => roleOf(p) === 'organizador') || null)
+                    setCoorganizers(list.filter(p => roleOf(p) === 'coorganizador'))
+                    setAttendees(list.filter(p => roleOf(p) === 'asistente'))
+                  })
+                  .catch(() => {})
+              } catch (err: any) {
+                console.error(err)
+                toast.error(err?.message || 'Error al eliminar al participante')
+              } finally {
+                setShowDeleteModal(false)
+                setToDeleteUser(null)
+              }
+            }}
+          >
+            Eliminar
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

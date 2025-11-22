@@ -7,11 +7,11 @@ import { Button } from '../../../../components/Button';
 
 interface ResourcesSectionProps {
   eventoId: string;
-  canManageResources?: boolean;
+  canSeeResources: boolean;
   refreshTrigger?: number;
 }
 
-export const ResourcesSection = ({ eventoId, canManageResources = false, refreshTrigger }: ResourcesSectionProps) => {
+export const ResourcesSection = ({ eventoId, canSeeResources, refreshTrigger }: ResourcesSectionProps) => {
   const [resources, setResources] = useState<Recurso[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -101,7 +101,7 @@ export const ResourcesSection = ({ eventoId, canManageResources = false, refresh
                       Tipo: {tipoRecurso}
                     </p>
                   </div>
-                  {canManageResources && recurso.id && (
+                  {canSeeResources && recurso.id && (
                     <button
                       onClick={() => {
                         if (deletingId !== null) return;

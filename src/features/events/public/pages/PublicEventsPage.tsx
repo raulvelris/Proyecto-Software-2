@@ -41,13 +41,15 @@ export default function PublicEventsPage() {
           {e.imageUrl && <img src={e.imageUrl} alt={e.name} className="w-full h-40 object-cover" />}
           <div className="p-4">
             <h3 className="font-semibold">{e.name}</h3>
-            <p className="text-sm text-slate-400 mt-1">{new Date(e.dateStart).toLocaleString()}</p>
+            <p className="text-sm text-slate-400 mt-1">
+              {new Date(e.dateStart).toLocaleDateString()} — {new Date(e.dateStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
             <div className="mt-4 flex gap-2">
               <Button onClick={() => handleConfirm(e.id)}>
                 <i className="bi bi-check2-circle me-2" />Confirm attendance
               </Button>
               <Button variant="secondary" onClick={() => navigate(`/events/${e.id}`)}>
-                <i className="bi bi-info-circle me-2" />Details
+                <i className="bi bi-info-circle me-2" />View details
               </Button>
             </div>
           </div>

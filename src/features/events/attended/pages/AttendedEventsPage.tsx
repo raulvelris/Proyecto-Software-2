@@ -19,13 +19,18 @@ export default function AttendedEventsPage() {
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {events.map((e) => (
-        <div key={e.id} className="card p-4">
-          <h3 className="font-semibold"><i className="bi bi-check2-circle me-2" />{e.name}</h3>
-          <p className="text-sm text-slate-400 mt-1">{new Date(e.dateStart).toLocaleString()}</p>
-          <div className="mt-3">
-            <Button variant="secondary" onClick={() => navigate(`/events/${e.id}`)}>
-              <i className="bi bi-info-circle me-2" />View details
-            </Button>
+        <div key={e.id} className="card overflow-hidden">
+          {e.imageUrl && <img src={e.imageUrl} alt={e.name} className="w-full h-40 object-cover" />}
+          <div className="p-4">
+            <h3 className="font-semibold">{e.name}</h3>
+            <p className="text-sm text-slate-400 mt-1">
+              {new Date(e.dateStart).toLocaleDateString()} — {new Date(e.dateStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+            <div className="mt-4">
+              <Button variant="secondary" onClick={() => navigate(`/events/${e.id}`)}>
+                <i className="bi bi-info-circle me-2" />View details
+              </Button>
+            </div>
           </div>
         </div>
       ))}
