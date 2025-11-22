@@ -4,6 +4,7 @@ export type PrivateInvitationItem = {
   invitacion_usuario_id: number | null
   estado: string | null
   fechaLimite: string | null
+  esParaCoorganizar: boolean
   evento: {
     evento_id: number
     titulo: string | null

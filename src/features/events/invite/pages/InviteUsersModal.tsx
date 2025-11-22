@@ -218,17 +218,17 @@ export default function InviteUsersModal({ open, onClose }: InviteUsersModalProp
       })
 
       if (sentAttendees > 0 || sentCoorganizers > 0) {
-        const attendeeText = sentAttendees > 0 ? `${sentAttendees} user(s) as attendee(s)` : '';
+        const attendeeText = sentAttendees > 0 ? `${sentAttendees} usuario(s) como asistente(s)` : '';
         const separator = sentAttendees > 0 && sentCoorganizers > 0 ? ' and ' : '';
-        const coorganizerText = sentCoorganizers > 0 ? `${sentCoorganizers} user(s) as co-organizer(s)` : '';
-        toast.success(`Successfully invited: ${attendeeText}${separator}${coorganizerText}`);
+        const coorganizerText = sentCoorganizers > 0 ? `${sentCoorganizers} usuario(s) como coorganizador(s)` : '';
+        toast.success(`Invitacion Exitosa:: ${attendeeText}${separator}${coorganizerText}`);
       }
 
-      if (alreadyCount) toast.error(`${alreadyCount} user(s) were already invited`)
-      if (notFoundCount) toast.error(`${notFoundCount} user(s) not found`)
+      if (alreadyCount) toast.error(`${alreadyCount} usuarios(s) ya fueron invitados`)
+      if (notFoundCount) toast.error(`${notFoundCount} usuario(s) no encontrado`)
 
       const nuevosNoEligibles = resultados
-        .filter(r => r.status === 'Invitation sent')
+        .filter(r => r.status === 'Invitatcion enviada')
         .map(r => ({
           usuario_id: Number(r.usuario_id),
           tipo: r.esParaCoorganizar ? 'pendiente_coorganizador' as const : 'pendiente_asistente' as const
