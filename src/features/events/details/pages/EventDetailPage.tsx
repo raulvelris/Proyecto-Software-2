@@ -1,18 +1,25 @@
 import { useEffect, useState } from 'react'
+
 import InviteUsersModal from '../../invite/pages/InviteUsersModal'
 import { useParams, useNavigate } from 'react-router-dom'
+
 import { Button } from '../../../../components/Button.tsx'
-import Modal from '../../../../components/Modal'
-import { ConfirmationModal } from '../../../../components/modals/ConfirmationModal' //
+
 import { useAuthStore } from '../../../../store/authStore.ts'
-import { toast } from 'sonner'
-import { getEventoDetalle, getParticipantesByEvento, desvincularme, eliminarInvitado, type ParticipanteItem } from '../../../../features/events/details/service/EventDetailService.ts'
-import { deleteEvent } from '../../../../features/events/services/eventsService.ts'
-import { getCoordenadas } from '../../../../features/events/details/service/CoordinatesService.ts'
+import { getEventoDetalle } from '../../../../features/events/details/service/EventDetailService.ts'
+
+import { getParticipantesByEvento, type ParticipanteItem } from '../../participants-list/service/ParticipantsListService'
+import { DeleteEventButton } from '../../delete-event/components/DeleteEventButton'
+import { DeleteAttendeeModal } from '../../delete-attendee/components/DeleteAttendeeModal'
+
+import { getCoordenadas } from '../../map-view/service/CoordinatesService.ts'
 import { AddResourceModal } from '../../resources/components/AddResourceModal'
 import { ResourcesSection } from '../../resources/components/ResourcesSection'
+import { ParticipantsList } from '../../participants-list/components/ParticipantsList'
+import { DisassociateEventModal } from '../../disassociate-event/components/DisassociateEventModal'
+
 import type { Event as EventItem } from '../../../../types/EventTipo.ts'
-import InteractiveMap from '../components/InteractiveMap'
+import InteractiveMap from '../../map-view/components/InteractiveMap.tsx'
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -29,8 +36,7 @@ export default function EventDetailPage() {
 
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showAddResourceModal, setShowAddResourceModal] = useState(false)
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false) //
-  const [isCanceling, setIsCanceling] = useState(false) //
+
   const [resourceAddedTrigger, setResourceAddedTrigger] = useState(0)
   const [showUnlinkModal, setShowUnlinkModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -101,25 +107,6 @@ export default function EventDetailPage() {
 
   if (!event) return <p className="text-slate-400">Loading…</p>
 
-  const handleCancelClick = () => {
-    setShowCancelConfirm(true)
-  }
-
-  const handleCancelEvent = async () => {
-    if (!id) return
-    setIsCanceling(true)
-    try {
-      await deleteEvent(id)
-      toast.success('Evento cancelado')
-      navigate('/events/managed')
-    } catch (e: any) {
-      toast.error(e?.message || 'Error al cancelar el evento')
-    } finally {
-      setIsCanceling(false)
-      setShowCancelConfirm(false)
-    }
-  }
-
   return (
     <div className="grid lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
@@ -144,44 +131,16 @@ export default function EventDetailPage() {
 
         {/* Ver participantes: solo organizador + coorganizador */}
         {canManageEvent && (
-          <div className="card p-5 mt-5">
-            <h2 className="font-semibold mb-2">Participantes</h2>
-            <ul className="text-sm divide-y divide-white/5">
-              {organizer && (
-                <li className="py-2 flex items-center gap-2">
-                  <i className="bi bi-person-badge" />
-                  <span className="font-medium">{organizer.nombre} {organizer.apellido}</span>
-                  <span className="text-slate-400">– {organizer.correo}</span>
-                  <span className="ms-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">
-                    Organizador
-                  </span>
-                </li>
-              )}
-
-              {attendees.length ? (
-                attendees.map((a) => (
-                  <li key={a.participante_id} className="py-2 flex items-center gap-2">
-                    <i className="bi bi-person-circle" />
-                    <span>{a.nombre} {a.apellido}</span>
-                    <span className="text-slate-400">– {a.correo}</span>
-                    {canManageEvent && (
-                      <button
-                        className="ms-auto text-sm text-red-600 hover:underline"
-                        onClick={() => {
-                          setToDeleteUser(a)
-                          setShowDeleteModal(true)
-                        }}
-                      >
-                        Eliminar
-                      </button>
-                    )}
-                  </li>
-                ))
-              ) : (
-                <li className="py-2 text-slate-400 text-sm">No hay asistentes aún.</li>
-              )}
-            </ul>
-          </div>
+          <ParticipantsList
+            organizer={organizer}
+            coorganizers={coorganizers}
+            attendees={attendees}
+            canManageEvent={canManageEvent}
+            onDeleteParticipant={(participant) => {
+              setToDeleteUser(participant)
+              setShowDeleteModal(true)
+            }}
+          />
         )}
 
         {/* Recursos: todos los roles válidos */}
@@ -246,14 +205,10 @@ export default function EventDetailPage() {
                 <i className="bi bi-pencil-square me-2" />Edit Event
               </Button>
               {canCancelEvent && (
-                <Button 
-                  variant="danger" 
-                  onClick={handleCancelClick}
-                  disabled={isCanceling}
-                >
-                  <i className="bi bi-x-circle me-2" />
-                  {isCanceling ? 'Cancelando...' : 'Cancelar Evento'}
-                </Button>
+                <DeleteEventButton 
+                  eventoId={id!}
+                  onDeleted={() => navigate('/events/managed')}
+                />
               )}
             </div>
           </div>
@@ -281,123 +236,30 @@ export default function EventDetailPage() {
             eventoId={id || ''} 
             onResourceAdded={() => setResourceAddedTrigger(prev => prev + 1)} 
           />
-          <ConfirmationModal
-            isOpen={showCancelConfirm}
-            onClose={() => !isCanceling && setShowCancelConfirm(false)}
-            onConfirm={handleCancelEvent}
-            title="¿Estás seguro de cancelar el evento?"
-            message="Esta acción no se puede deshacer. Los asistentes serán notificados de la cancelación."
-            confirmText="Sí, cancelar evento"
-            cancelText="No, mantener el evento"
-            isProcessing={isCanceling}
-          />
         </>
       )}
-      <Modal
+      <DisassociateEventModal
         open={showUnlinkModal}
+        eventoId={id ? Number(id) : null}
+        usuarioId={user?.id ? Number(user.id) : null}
         onClose={() => setShowUnlinkModal(false)}
-        title="¿Estás seguro?"
-      >
-        <p className="text-sm text-slate-400">
-          ¿Estás seguro de desvincularte de este evento? Esta acción no se puede deshacer.
-        </p>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => setShowUnlinkModal(false)}>Cancelar</Button>
-          <Button
-            variant="danger"
-            onClick={async () => {
-              try {
-                if (!id || !user?.id) return
-                await desvincularme(Number(id), Number(user.id))
-                toast.success('Te has desvinculado del evento correctamente')
-                await getEventoDetalle(Number(id))
-                  .then((r) => {
-                    const ev = r.evento as any
-                    const mapped: EventItem = {
-                      name: ev.titulo ?? 'Untitled Event',
-                      dateStart: ev.fechaInicio ? new Date(ev.fechaInicio).toISOString() : undefined,
-                      dateEnd: ev.fechaFin ? new Date(ev.fechaFin).toISOString() : undefined,
-                      capacity: typeof ev.aforo === 'number' ? ev.aforo : 0,
-                      description: ev.descripcion ?? undefined,
-                      privacy: (ev.privacidad === 1 ? 'public' : 'private'),
-                      locationCity: ev.ubicacion?.direccion ?? '',
-                      guestsCount: typeof ev.attendeesCount === 'number' ? ev.attendeesCount : 0,
-                      imageUrl: ev.imagen ?? undefined,
-                    }
-                    setEvent(mapped)
-                  })
-                  .catch(() => {})
-                await getParticipantesByEvento(Number(id))
-                  .then((r) => {
-                    const list = (r.participantes || []) as ParticipanteItem[]
-                    const roleOf = (p: ParticipanteItem) => (p.rol || '').toLowerCase()
-                    setOrganizer(list.find(p => roleOf(p) === 'organizador') || null)
-                    setCoorganizers(list.filter(p => roleOf(p) === 'coorganizador'))
-                    setAttendees(list.filter(p => roleOf(p) === 'asistente'))
-                  })
-                  .catch(() => {})
-              } catch (err: any) {
-                console.error(err)
-                toast.error(err?.message || 'Error al desvincularte')
-              } finally {
-                setShowUnlinkModal(false)
-              }
-            }}
-          >
-            Desvincularme
-          </Button>
-        </div>
-      </Modal>
-      <Modal
+        onSuccess={() => navigate('/events/public')}
+      />
+      <DeleteAttendeeModal
         open={showDeleteModal}
+        eventoId={id ? Number(id) : null}
+        participante={toDeleteUser}
         onClose={() => {
           setShowDeleteModal(false)
           setToDeleteUser(null)
         }}
-        title="¿Estás seguro de eliminar a este participante?"
-      >
-        <p className="text-sm text-slate-400">
-          ¿Estás seguro de eliminar a este participante? Esta acción no se puede deshacer.
-        </p>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setShowDeleteModal(false)
-              setToDeleteUser(null)
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="danger"
-            onClick={async () => {
-              try {
-                if (!id || !toDeleteUser) return
-                await eliminarInvitado(Number(id), Number(toDeleteUser.usuario_id))
-                toast.success('Participante eliminado correctamente')
-                await getParticipantesByEvento(Number(id))
-                  .then((r) => {
-                    const list = (r.participantes || []) as ParticipanteItem[]
-                    const roleOf = (p: ParticipanteItem) => (p.rol || '').toLowerCase()
-                    setOrganizer(list.find(p => roleOf(p) === 'organizador') || null)
-                    setCoorganizers(list.filter(p => roleOf(p) === 'coorganizador'))
-                    setAttendees(list.filter(p => roleOf(p) === 'asistente'))
-                  })
-                  .catch(() => {})
-              } catch (err: any) {
-                console.error(err)
-                toast.error(err?.message || 'Error al eliminar al participante')
-              } finally {
-                setShowDeleteModal(false)
-                setToDeleteUser(null)
-              }
-            }}
-          >
-            Eliminar
-          </Button>
-        </div>
-      </Modal>
+        onParticipantsUpdated={(list) => {
+          const roleOf = (p: ParticipanteItem) => (p.rol || '').toLowerCase()
+          setOrganizer(list.find(p => roleOf(p) === 'organizador') || null)
+          setCoorganizers(list.filter(p => roleOf(p) === 'coorganizador'))
+          setAttendees(list.filter(p => roleOf(p) === 'asistente'))
+        }}
+      />
     </div>
   )
 }

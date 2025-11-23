@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuthStore } from '../../../../store/authStore'
 import EventForm, { type EventFormValues } from '../components/EventForm'
-import { updateEvent } from '../../services/eventsService'
+import { updateEvent } from '../service/EditEventService'
 import { getEventoDetalle } from '../../details/service/EventDetailService'
-import { getCoordenadas } from '../../details/service/CoordinatesService'
+import { getCoordenadas } from '../../map-view/service/CoordinatesService'
 
 export default function EditEventPage() {
   const { id } = useParams<{ id: string }>()

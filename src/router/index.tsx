@@ -16,7 +16,7 @@ import EventDetailPage from '../features/events/details/pages/EventDetailPage'
 import PublicEventsPage from '../features/events/public/pages/PublicEventsPage'
 import InboxPage from '../features/events/inbox/pages/InboxPage'
 import AttendedEventsPage from '../features/events/attended/pages/AttendedEventsPage'
-import EditEventPage from '../features/events/edit/pages/EditEventPage'
+import EditEventPage from '../features/events/edit-event/pages/EditEventPage'
 
 import { PrivateRoute } from './privateRoute'
 

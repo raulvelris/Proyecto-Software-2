@@ -164,7 +164,7 @@ export default function InboxPage() {
           const limite = limiteDate ? limiteDate.toLocaleString() : '—'
           const expired = !!limiteDate && limiteDate.getTime() < Date.now()
           const disabled = submittingId === inv.invitacion_usuario_id || expired
-          const tipoLabel = inv.esParaCoorganizar ? 'Coorganizador' : 'Asistente'
+          const tipoLabel = inv.esParaCoorganizar ? 'Coorganizar' : 'Asistir'
           const tipoStyles = inv.esParaCoorganizar
             ? 'bg-amber-100 text-amber-800 border-amber-200'
             : 'bg-emerald-100 text-emerald-700 border-emerald-200'

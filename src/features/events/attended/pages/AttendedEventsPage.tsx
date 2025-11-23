@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import EmptyState from '../../../../components/EmptyState.tsx'
 import { Button } from '../../../../components/Button.tsx'
 import { useNavigate } from 'react-router-dom'
-import { listAttendedEvents } from '../../services/eventsService.ts'
+import { listAttendedEvents } from '../service/AttendedEventsService.tsx'
 
 export default function AttendedEventsPage() {
   const [events, setEvents] = useState<any[]>([])

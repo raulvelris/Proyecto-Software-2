@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../../../../components/Button.tsx'
 import { toast } from 'sonner'
-import { listPublicEvents } from '../../services/eventsService'
+import { listPublicEvents } from '../service/PublicEventsService'
 import { useNavigate } from 'react-router-dom'
-import { confirmPublicAttendance } from '../../details/service/EventDetailService'
+import { confirmPublicAttendance } from '../../public-attendance/service/PublicAttendanceService'
 import { useAuthStore } from '../../../../store/authStore'
 
 export default function PublicEventsPage() {

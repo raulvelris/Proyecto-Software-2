@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import EmptyState from '../../../../components/EmptyState'
 import { Link, useNavigate } from 'react-router-dom'
-import { listManagedEvents } from '../../services/eventsService'
+import { listManagedEvents } from '../service/ManagedEventsService'
 import { Button } from '../../../../components/Button.tsx'
 
 type ManagedEvent = { id: string | number; name: string; dateStart: string; imageUrl?: string; capacity?: number; managedAs?: 'Organizador' | 'Coorganizador' | null; isOrganizer?: boolean }
